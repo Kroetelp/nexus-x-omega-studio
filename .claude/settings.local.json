@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(npm run dev:*)",
+      "Bash(node:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx vite build:*)",
+      "Bash(grep:*)",
+      "Bash(curl:*)",
+      "Bash(emcc:*)",
+      "Bash(npm run build:wasm:*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)"
+    ]
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true
+  }
+}

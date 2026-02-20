@@ -1,0 +1,29 @@
+{
+  "name": "nexus-x-omega-studio",
+  "version": "4.0.0",
+  "description": "AI-Powered Music Sequencer with AudioWorklet DSP and WASM Acceleration",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "build:wasm": "emcc -O3 -s WASM=1 -s EXPORTED_FUNCTIONS='[\"_process\",\"_processV2\",\"_processLegacy\",\"_getInputBuffer\",\"_getOutputBuffer\",\"_resetState\"]' -s EXPORTED_RUNTIME_METHODS='[\"ccall\",\"cwrap\"]' -s ALLOW_MEMORY_GROWTH=1 -o public/nexus-dsp.wasm nexus-dsp.cpp",
+    "build:wasm-debug": "emcc -g -s WASM=1 -s EXPORTED_FUNCTIONS='[\"_process\",\"_processV2\",\"_processLegacy\",\"_getInputBuffer\",\"_getOutputBuffer\",\"_resetState\"]' -s EXPORTED_RUNTIME_METHODS='[\"ccall\",\"cwrap\"]' -s ALLOW_MEMORY_GROWTH=1 -o public/nexus-dsp.wasm nexus-dsp.cpp"
+  },
+  "dependencies": {
+    "@magenta/music": "^1.23.1",
+    "nexusui": "^2.1.1",
+    "tone": "^14.8.49",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/uuid": "^9.0.8",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

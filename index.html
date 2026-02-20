@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NEXUS-X Omega Studio v39 - AI Powered Music Sequencer">
+    <title>NEXUS-X // OMEGA STUDIO v39 (Clean UI Edition)</title>
+    
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/dist/magentamusic.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nexusui@2.1.1/dist/NexusUI.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎛️</text></svg>">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<dialog id="startDialog" open>
+    <div class="font-mono" style="font-size:48px; margin-bottom:10px; font-weight: 800; text-shadow: 0 0 20px rgba(0,255,148,0.5);">
+        NEXUS<span class="text-primary">-X</span>
+    </div>
+    <div class="font-mono" style="font-size:16px; margin-bottom:5px; font-weight: 700; letter-spacing: 2px;">CLEAN UI EDITION v39</div>
+    <div style="color:#666; font-size:11px; margin-bottom:40px; letter-spacing: 1px;">AUDIOWORKLET DSP // WASM READY // OPTIMIZED THREADING</div>
+    <button class="btn active" style="padding:15px 50px; font-size:14px; border-radius: 30px;" id="initBtn">INITIALIZE SYSTEM</button>
+</dialog>
+
+<dialog id="aiDialog">
+    <div id="aiGenerationPhase">
+        <div class="loader-ring"></div>
+        <div class="font-mono" style="font-size:20px; font-weight: 800; margin-bottom: 5px;">AI IS COMPOSING...</div>
+        <div id="directorStatus" style="color:var(--magenta); font-size:11px; letter-spacing: 1px;">SYNTHESIZING DYNAMICS</div>
+    </div>
+    <div id="aiReviewPhase" style="display:none;">
+        <div class="font-mono" style="font-size:18px; font-weight: 800; margin-bottom: 15px;">🎵 SONG STRUKTUR VORSCHAU</div>
+        <div id="structurePreview" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; max-height: 250px; overflow-y: auto;">
+        </div>
+        <div id="liveControls" style="display: flex; gap: 10px; justify-content: center; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px;">
+            <div style="display: flex; gap: 15px;">
+                <button id="aiConfirmBtn" class="btn active" style="min-width: 120px;">▶️ PLAY LIVE</button>
+                <button id="aiCancelBtn" class="btn" style="min-width: 120px;">✖ ABRECHEN</button>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<dialog id="helpDialog" onclick="this.close()">
+    <div class="help-card" onclick="event.stopPropagation()">
+        <div class="font-mono text-primary" style="font-size:18px; margin-bottom:20px; font-weight: 800; border-bottom: 1px solid #333; padding-bottom: 10px;">
+            SYSTEM COMMANDS
+        </div>
+        <div class="help-grid">
+            <div>PLAY / STOP <span class="key-badge">SPACE</span></div>
+            <div>LOAD SNAPSHOT <span class="key-badge">1 - 4</span></div>
+            <div>SAVE SNAPSHOT <span class="key-badge">SHIFT + 1-4</span></div>
+            <div>MACRO FX <span class="key-badge">Q W E R</span></div>
+            <div>EQ BANDS (KILL) <span class="key-badge">Z X C</span></div>
+            <div>TOGGLE HELP <span class="key-badge">H</span></div>
+        </div>
+        <div class="font-mono" style="margin-top:20px; font-size:10px; color:#666; text-align:center;">CLICK ANYWHERE TO CLOSE</div>
+    </div>
+</dialog>
+
+<div id="toast-container"></div>
+
+<header class="app-bar">
+    <div class="brand font-mono">NEXUS<span class="text-primary">-X</span> Ω v39</div>
+    <div id="song-status" class="font-mono" style="flex:1; text-align:center;">MANUAL MODE</div>
+    <div id="bpm-display" class="font-mono text-warn" style="font-weight: 800; min-width: 60px; text-align: right;">128 BPM</div>
+    <div style="display:flex; gap:10px; align-items: center;">
+        <!-- GENERATE DROPDOWN -->
+        <div class="dropdown">
+            <button class="btn btn-ai dropdown-toggle" onclick="toggleDropdown('genDropdown', event)">
+                ✨ GENERATE ▾
+            </button>
+            <div id="genDropdown" class="dropdown-menu">
+                <button class="dropdown-item" onclick="window.arranger.generateFullSong()">
+                    <span class="item-icon">🎵</span>
+                    <span class="item-text">
+                        <span class="item-title">Quick Song</span>
+                        <span class="item-desc">Fast AI generation</span>
+                    </span>
+                </button>
+                <button class="dropdown-item" onclick="window.arranger.generateEpicSong()">
+                    <span class="item-icon">🔥</span>
+                    <span class="item-text">
+                        <span class="item-title">Epic Song</span>
+                        <span class="item-desc">3-4 min full arrangement</span>
+                    </span>
+                </button>
+                <button class="dropdown-item" onclick="window.arranger.generateNexusAISong()">
+                    <span class="item-icon">🤖</span>
+                    <span class="item-text">
+                        <span class="item-title">NEXUS-AI</span>
+                        <span class="item-desc">Our proprietary AI</span>
+                    </span>
+                </button>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item" onclick="window.arranger.regenerateCurrentSong()">
+                    <span class="item-icon">🔄</span>
+                    <span class="item-text">
+                        <span class="item-title">Regenerate</span>
+                        <span class="item-desc">New patterns, same structure</span>
+                    </span>
+                </button>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item dropdown-item-special" onclick="window.backgroundExporter.generateAndDownload()">
+                    <span class="item-icon">💾</span>
+                    <span class="item-text">
+                        <span class="item-title">Background Save</span>
+                        <span class="item-desc">Generate & download without playback</span>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- EXPORT DROPDOWN -->
+        <div class="dropdown">
+            <button class="btn dropdown-toggle" style="background: linear-gradient(45deg, #00c853, #00bfa5);" onclick="toggleDropdown('exportDropdown', event)">
+                💾 EXPORT ▾
+            </button>
+            <div id="exportDropdown" class="dropdown-menu">
+                <button class="dropdown-item dropdown-item-special" onclick="window.backgroundExporter.quickExport()">
+                    <span class="item-icon">⚡</span>
+                    <span class="item-text">
+                        <span class="item-title">⚡ HYPER-RENDER</span>
+                        <span class="item-desc">10-50x faster! 3min song in ~5sec</span>
+                    </span>
+                </button>
+                <button class="dropdown-item" onclick="window.wavExporter.exportWAV()">
+                    <span class="item-icon">💿</span>
+                    <span class="item-text">
+                        <span class="item-title">Realtime Export</span>
+                        <span class="item-desc">Record while playing</span>
+                    </span>
+                </button>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item" id="recMenuItem" onclick="window.sys.toggleRecord()">
+                    <span class="item-icon">⏺</span>
+                    <span class="item-text">
+                        <span class="item-title">Record</span>
+                        <span class="item-desc" id="recStatus">Start real-time recording</span>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- PLAY BUTTON -->
+        <button class="btn" id="playBtn" onclick="window.sys.togglePlay()">▶ PLAY</button>
+
+        <!-- HELP & PANIC -->
+        <button class="btn" onclick="document.getElementById('helpDialog').showModal()" title="Show Hotkeys">?</button>
+        <button class="btn" onclick="window.sys.panic()" style="color:var(--flux); border-color:var(--flux);" title="Panic / Stop All">⚠️</button>
+    </div>
+</header>
+
+<!-- SONG STRUCTURE BAR - Moved to bottom for more space -->
+<div id="song-structure-bar" style="background: linear-gradient(180deg, #0a0a0a, #111); border-top: 1px solid #222; padding: 10px 20px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span class="font-mono" style="font-size: 11px; color: #666;">🎵 SONG STRUKTUR</span>
+        <span id="total-bars-display" class="font-mono" style="font-size: 10px; color: #444;">0 BARS</span>
+    </div>
+    <nav id="timeline" style="height: 60px; position: relative; background: #050505; border-radius: 6px; overflow: hidden;">
+        <div id="minimap" style="height: 100%; display: flex; align-items: stretch;"></div>
+        <div id="playhead-bar" style="position: absolute; top: 0; left: 0; width: 2px; height: 100%; background: #00ff94; box-shadow: 0 0 10px #00ff94; transition: left 0.05s linear; pointer-events: none;"></div>
+    </nav>
+</div>
+
+<main class="workspace">
+    <section class="sequencer" id="rack">
+        </section>
+
+    <aside class="deck">
+        <div class="deck-header font-mono">NEXUSUI PERFORMANCE CORE</div>
+        
+        <div class="module">
+            <div class="mod-title">MASTER EQ, PITCH & WIDTH <span class="font-mono">[Z X C]</span></div>
+            <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 5px 0;">
+                <div class="nexus-btn-container"><div id="eqLowBtn"></div><span class="text-warn">LOW</span></div>
+                <div class="nexus-btn-container"><div id="eqMidBtn"></div><span class="text-primary">MID</span></div>
+                <div class="nexus-btn-container"><div id="eqHighBtn"></div><span class="text-hyper">HIGH</span></div>
+                <div class="nexus-btn-container" style="margin-left: 5px;"><div id="masterPitchDial"></div><span>PITCH</span></div>
+                <div class="nexus-btn-container"><div id="masterWidthDial"></div><span>WIDTH</span></div>
+                <div class="nexus-btn-container" style="border-left:1px solid #222; padding-left:8px; flex-direction:row; gap:10px;">
+                    <div style="display:flex; flex-direction:column; align-items:center;"><div id="masterVolDial"></div><span>VOL</span></div>
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                        <canvas id="compMeter" width="8" height="25" style="background:#000; border:1px solid #333; margin-top:2px;"></canvas>
+                        <span style="font-size:8px; color:#555; margin-top:3px;">GR</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="module">
+            <div class="mod-title">LIVE VOCAL RACK <span>MIC</span></div>
+            <div style="display: flex; gap: 15px; align-items: center; justify-content: space-between;">
+                <div class="nexus-btn-container"><div id="micBtn"></div><span style="margin-top:5px;">ON/OFF</span></div>
+                <div class="nexus-btn-container"><div id="micVolDial"></div><span style="margin-top:5px;">GAIN</span></div>
+                <div class="nexus-btn-container"><div id="micReverbDial"></div><span style="margin-top:5px;">SPACE</span></div>
+            </div>
+        </div>
+
+        <div class="module">
+            <div class="mod-title">GLOBAL ATMOSPHERE <span>SPACE</span></div>
+            <div style="display: flex; gap: 10px; justify-content: space-between; padding: 5px 0;">
+                <div class="nexus-btn-container"><div id="verbWetDial"></div><span>VERB</span></div>
+                <div class="nexus-btn-container"><div id="delayWetDial"></div><span>DELAY</span></div>
+                <div class="nexus-btn-container"><div id="delayTimeDial"></div><span>TIME</span></div>
+                <div class="nexus-btn-container"><div id="delayFbDial"></div><span>FDBK</span></div>
+            </div>
+        </div>
+
+        <div class="module">
+            <div class="mod-title" style="margin-bottom: 10px;">MACRO FX <span class="font-mono">[Q W E R]</span></div>
+            <div style="display: flex; gap: 10px; justify-content: space-between; padding: 5px 0;">
+                <div class="nexus-btn-container"><div id="fluxBtn"></div><span>FLUX</span></div>
+                <div class="nexus-btn-container"><div id="pumpBtn"></div><span>PUMP</span></div>
+                <div class="nexus-btn-container"><div id="stuttBtn"></div><span>STUTT</span></div>
+                <div class="nexus-btn-container"><div id="wobbleBtn"></div><span>WOBBLE</span></div>
+            </div>
+        </div>
+
+        <div class="module">
+            <div class="mod-title">DSP WORKLET FX <span>BITCRUSH</span></div>
+            <div style="display: flex; gap: 15px; align-items: center; justify-content: space-between;">
+                <div id="bitcrush-indicator" class="led-indicator"></div>
+                <div class="nexus-btn-container"><div id="bitcrushToggleBtn"></div><span style="margin-top:5px;">ON/OFF</span></div>
+                <div class="nexus-btn-container"><div id="bitcrushDepthDial"></div><span style="margin-top:5px;">DEPTH</span></div>
+                <div class="nexus-btn-container"><div id="bitcrushFreqDial"></div><span style="margin-top:5px;">FREQ</span></div>
+            </div>
+        </div>
+
+        <div class="module">
+            <div class="mod-title">GENRE & ARCHITECTURE <span>AI</span></div>
+            <select id="genreSelect" onchange="window.sys.setGenre(this.value)">
+                <option value="SYNTHWAVE">GENRE: SYNTHWAVE (100-120 BPM)</option>
+                <option value="TECHNO">GENRE: CYBER-TECHNO (130-145 BPM)</option>
+                <option value="TRAP">GENRE: TRAP-DRIFT (140-160 BPM)</option>
+                <option value="AMBIENT">GENRE: CHILL-AMBIENT (70-90 BPM)</option>
+                <option value="LOFI">GENRE: LOFI-BEATS (75-95 BPM)</option>
+                <option value="HOUSE">GENRE: DEEP HOUSE (120-128 BPM)</option>
+                <option value="DNB">GENRE: DRUM & BASS (165-175 BPM)</option>
+                <option value="CYBERPUNK">GENRE: CYBERPUNK (100-110 BPM)</option>
+                <option value="DUBSTEP">GENRE: DUBSTEP (140-150 BPM)</option>
+                <option value="SYNTHPOP">GENRE: SYNTHPOP (110-125 BPM)</option>
+                <option value="RETROWAVE">GENRE: RETROWAVE (80-95 BPM)</option>
+                <option value="TRANCE">GENRE: TRANCE (135-142 BPM)</option>
+                <option value="INDUSTRIAL">GENRE: INDUSTRIAL (150-175 BPM)</option>
+                <option value="ETHEREAL">GENRE: ETHEREAL (65-85 BPM)</option>
+                <option value="CHIPTUNE">GENRE: CHIPTUNE (120-140 BPM)</option>
+                <option value="CINEMATIC">GENRE: CINEMATIC (60-80 BPM)</option>
+                <option value="DUNGEONSYNTH">GENRE: DUNGEON SYNTH (60-85 BPM)</option>
+                <option value="HAPPYHARDCORE">GENRE: HAPPY HARDCORE (170-185 BPM)</option>
+            </select>
+            <select id="kitSelect" onchange="window.engine.loadKit(this.value)">
+                <option value="NEON">ENGINE: NEON CORE (ANALOG)</option>
+                <option value="GLITCH">ENGINE: NEURO GLITCH (FM/IDM)</option>
+                <option value="ACID">ENGINE: ACID WASTELAND (AM/303)</option>
+                <option value="VINYL">ENGINE: VINYL TAPES (LO-FI)</option>
+                <option value="CLUB">ENGINE: CLUB 909 (HOUSE/TECH)</option>
+                <option value="CHIPTUNE">ENGINE: 8-BIT CHIPTUNE (SQUARE)</option>
+                <option value="CINEMATIC">ENGINE: CINEMATIC STAGE (ORCH)</option>
+                <option value="INDUSTRIAL">ENGINE: RUST & DUST (DISTORTED)</option>
+                <option value="ETHEREAL">ENGINE: DREAMSCAPE (AMBIENT)</option>
+                <option value="DUNGEON">ENGINE: DUNGEON TOMES (LO-FI FANTASY)</option>
+            </select>
+            <select id="scaleSelect" onchange="window.engine.setScale(this.value)" style="max-height: 400px;">
+                <optgroup label="🔥 DIATONIC CHADS (The Seven Modes)">
+                    <option value="ionian">🌀 IONIAN (MAJOR HAPPY)</option>
+                    <option value="dorian">🎷 DORIAN (JAZZ COOL)</option>
+                    <option value="phrygian">🎸 PHRYGIAN (SPANISH TENSION)</option>
+                    <option value="lydian">☁️ LYDIAN (DREAMY FLOAT)</option>
+                    <option value="mixolydian">🤘 MIXOLYDIAN (BLUES GROOVE)</option>
+                    <option value="aeolian">😢 AEOLIAN (SAD BOI)</option>
+                    <option value="minor">🌑 MINOR (DARK CLASSIC)</option>
+                    <option value="locrian">⚠️ LOCRIAN (WTF DISSONANT)</option>
+                </optgroup>
+                <optgroup label="🎵 PENTATONIC LEGENDS">
+                    <option value="pentatonic">🔓 PENTATONIC (OPEN SIMPLE)</option>
+                    <option value="majorPenta">🎸 MAJOR PENTA (ROCK RIFFS)</option>
+                    <option value="minorPenta">🦁 MINOR PENTA (BLUES SOUL)</option>
+                    <option value="blues">🎺 BLUES (BB KING NOD)</option>
+                    <option value="egyptian">🏺 EGYPTIAN (DESERT VIBE)</option>
+                    <option value="chinese">🐉 CHINESE (ANCIENT)</option>
+                    <option value="insen">🌸 INSEN (ANIME PROTAGONIST)</option>
+                    <option value="hirajoshi">⚔️ HIRAJOSHI (SAMURAI)</option>
+                </optgroup>
+                <optgroup label="🌙 HARMONIC & MELODIC">
+                    <option value="harmonicMinor">🐍 HARMONIC MINOR (SNAKE CHARMER)</option>
+                    <option value="melodicMinor">🎩 MELODIC MINOR (SOPHISTICATED)</option>
+                    <option value="harmonicMajor">✨ HARMONIC MAJOR (EXOTIC)</option>
+                    <option value="doubleHarmonic">👑 DOUBLE HARMONIC (PRINCE OF PERSIA)</option>
+                </optgroup>
+                <optgroup label="🌍 EXOTIC ALPHA">
+                    <option value="phrygianDominant">🔥 PHRYGIAN DOMINANT (FLAMENCO)</option>
+                    <option value="lydianAugmented">🚀 LYDIAN AUGMENTED (INTERSTELLAR)</option>
+                    <option value="lydianDominant">🎹 LYDIAN DOMINANT (HERBIE HANCOCK)</option>
+                    <option value="hungarianMinor">🧛 HUNGARIAN MINOR (VAMPIRE)</option>
+                    <option value="romanianMinor">🇷🇴 ROMANIAN MINOR (EASTERN FIRE)</option>
+                    <option value="neapolitanMinor">🇮🇹 NEAPOLITAN MINOR (DARK ITALIAN)</option>
+                    <option value="neapolitanMajor">🎭 NEAPOLITAN MAJOR (RARE)</option>
+                    <option value="spanishGypsy">💃 SPANISH GYPSY (FLAMENCO CHAOS)</option>
+                    <option value="byzantine">⛪ BYZANTINE (CONSTANTINOPLE)</option>
+                    <option value="persian">🕌 PERSIAN (ARABIAN NIGHTS)</option>
+                    <option value="altered">🌀 ALTERED (JAZZ FUSION)</option>
+                </optgroup>
+                <optgroup label="⚡ MODE VARIANTS (Deep Cuts)">
+                    <option value="superLocrian">🎷 SUPER LOCRIAN (COLTRANE CRIES)</option>
+                    <option value="dorianFlat2">🖤 DORIAN FLAT 2 (NOIR TECH)</option>
+                    <option value="lydianSharp2">👽 LYDIAN #2 (ALIEN PARADISE)</option>
+                    <option value="lydianFlat7">🔀 LYDIAN b7 (BEST OF BOTH)</option>
+                    <option value="mixolydianFlat6">🧛 MIXOLYDIAN b6 (VAMPIRE DISCO)</option>
+                    <option value="aeolianFlat5">💀 AEOLIAN b5 (DOOM SOUNDTRACK)</option>
+                    <option value="phrygianNatural3">🎸 PHRYGIAN NATURAL 3</option>
+                    <option value="dorianSharp4">🌀 DORIAN #4 (HYBRID)</option>
+                    <option value="ionianFlat2">🌙 IONIAN b2 (PHRYGIAN INV)</option>
+                </optgroup>
+                <optgroup label="🎹 JAZZ FUSION GIGACHADS">
+                    <option value="bebopDominant">🎺 BEBOP DOMINANT (CHARLIE PARKER)</option>
+                    <option value="bebopMajor">🎷 BEBOP MAJOR (DIZZY)</option>
+                    <option value="bebopMinor">🎵 BEBOP MINOR (MODAL JAZZ)</option>
+                    <option value="bebopDorian">🎹 BEBOP DORIAN</option>
+                    <option value="diminishedHw">👁️ DIMINISHED H-W (STRANGER THINGS)</option>
+                    <option value="diminishedWh">📐 DIMINISHED W-H (MATH ROCK)</option>
+                    <option value="wholeTone">🌀 WHOLE TONE (DEBUSSY)</option>
+                    <option value="augmented">🤖 AUGMENTED (SCI-FI)</option>
+                    <option value="tritone">😈 TRITONE (DEVIL IN MUSIC)</option>
+                </optgroup>
+                <optgroup label="🎮 VIDEO GAME / CHIPTUNE">
+                    <option value="nesMajor">🍄 NES MAJOR (MARIO BROS)</option>
+                    <option value="zelda">🗡️ ZELDA (TRIFORCE)</option>
+                    <option value="megaMan">🤖 MEGA MAN (BLUE BOMBER)</option>
+                    <option value="castlevania">🧛 CASTLEVANIA (VAMPIRE KILLER)</option>
+                    <option value="sonicMode">💨 SONIC (GOTTA GO FAST)</option>
+                    <option value="finalFantasy">⭐ FINAL FANTASY (UEMATSU)</option>
+                    <option value="tibia">⚔️ TIBIA (MEDIEVAL MMO)</option>
+                </optgroup>
+                <optgroup label="🎬 CINEMATIC / SOUNDTRACK">
+                    <option value="duneScale">🏜️ DUNE (SPICE MUST FLOW)</option>
+                    <option value="interstellar">🚀 INTERSTELLAR (DOCKING SCENE)</option>
+                    <option value="batmanTheme">🦇 BATMAN (WHY SO SERIOUS)</option>
+                    <option value="jokerStairs">🃏 JOKER STAIRS (SOCIETY)</option>
+                    <option value="braveheart">⚔️ BRAVEHEART (FREEDOM!)</option>
+                    <option value="gladiator">🏟️ GLADIATOR (ENTERTAINED?)</option>
+                </optgroup>
+                <optgroup label="🤘 METAL / ROCK CHAOS">
+                    <option value="phrygianMetal">🔥 PHRYGIAN METAL (YNGWIE)</option>
+                    <option value="harmonicMetal">🦇 HARMONIC METAL (NIGHTWISH)</option>
+                    <option value="locrianNatural2">💀 LOCRIAN NATURAL 2 (DEATH)</option>
+                    <option value="ukrainianDorian">🇺🇦 UKRAINIAN DORIAN (FOLK METAL)</option>
+                    <option value="enigmatic">🔮 ENIGMATIC (MYSTERY)</option>
+                </optgroup>
+                <optgroup label="🌍 WORLD MUSIC LEGENDS">
+                    <option value="hijaz">🌙 HIJAZ (ARABIC MAQAM)</option>
+                    <option value="bayati">🎵 BAYATI (MIDDLE EASTERN)</option>
+                    <option value="rast">🇹🇷 RAST (TURKISH MAKAM)</option>
+                    <option value="sikah">🎼 SIKAH (ARABIC)</option>
+                    <option value="saba">😢 SABA (SAD ARABIC)</option>
+                    <option value="huzam">🔥 HUZAM (INTENSE ARABIC)</option>
+                    <option value="ragaBhimpalasi">🇮🇳 RAGA BHIMPALASI (INDIAN)</option>
+                    <option value="ragaYaman">🌅 RAGA YAMAN (EVENING)</option>
+                    <option value="pelog">🇮🇩 PELOG (GAMELAN)</option>
+                    <option value="slendro">🌺 SLENDRO (BALI MYSTIC)</option>
+                    <option value="kumoi">🏯 KUMOI (JAPANESE)</option>
+                    <option value="iwato">🌑 IWATO (JAPANESE DARK)</option>
+                    <option value="prometheus">🔥 PROMETHEUS (SCRIABIN)</option>
+                </optgroup>
+                <optgroup label="🤪 EXPERIMENTAL WTF">
+                    <option value="octatonic">🎻 OCTATONIC (STRAVINSKY)</option>
+                    <option value="chromatic">🌈 CHROMATIC (CHAOS)</option>
+                    <option value="tritoneParadise">😈 TRITONE PARADISE (BANNED)</option>
+                    <option value="fourthsStack">📐 FOURTHS STACK (MCCOY TYNER)</option>
+                    <option value="fifthsStack">⚡ FIFTHS STACK (POWER CHORDS)</option>
+                </optgroup>
+                <optgroup label="🦜 SECRET UNLOCKABLES">
+                    <option value="simpleAs">3️⃣ SIMPLE AS (JUST A TRIAD LOL)</option>
+                    <option value="piratesCredo">🏴‍☠️ PIRATE'S CREDO (JACK SPARROW)</option>
+                    <option value="theL">👮 THE L (LAW & ORDER)</option>
+                </optgroup>
+            </select>
+            
+            <div class="action-grid">
+                <input type="file" id="midiInput" accept=".mid,.midi" style="display: none;" onchange="window.sys.importMidiAndStructure(event)">
+                <button class="action-btn" onclick="document.getElementById('midiInput').click()">📂 IN: MIDI</button>
+                <button class="action-btn" style="color:var(--discord); border-color:var(--discord);" onclick="window.sys.exportMidi()">💾 OUT: MIDI</button>
+                <button class="action-btn" id="humanizeBtn" onclick="window.sys.toggleHumanize(this)">🤖 HUMANIZE</button>
+                <button class="action-btn" id="lockThemeBtn" onclick="window.sys.toggleThemeLock(this)">🎨 LOCK THEME</button>
+                <button class="action-btn" style="color:var(--primary); border-color:var(--primary);" onclick="window.engine.mutateSoundDesign()">🧬 MUTATE SOUND</button>
+                <button class="action-btn" onclick="window.mixer.remaster()" style="border-color:var(--hyper); color:var(--hyper);">🎚️ AI REMASTER</button>
+                <button class="action-btn" onclick="window.seq.randomizeAll()">🎲 CHAOS GEN</button>
+                <button class="action-btn" style="color:var(--magenta); border-color:var(--magenta); grid-column:span 2;" onclick="window.arranger.generateDrumsOnly()">🧠 MAGENTA DRUMS ONLY</button>
+                <button class="action-btn" onclick="window.seq.clear()" style="grid-column: span 2;">🗑️ CLEAR GRID</button>
+            </div>
+        </div>
+
+        <div class="module">
+            <div class="mod-title">SNAPSHOT MEMORY <span class="font-mono">[1-4]</span></div>
+            <div class="snapshot-grid" id="snapshotRack">
+                <button class="snap-btn font-mono" id="snap-0" onclick="window.sys.loadSnap(0)">1</button>
+                <button class="snap-btn font-mono" id="snap-1" onclick="window.sys.loadSnap(1)">2</button>
+                <button class="snap-btn font-mono" id="snap-2" onclick="window.sys.loadSnap(2)">3</button>
+                <button class="snap-btn font-mono" id="snap-3" onclick="window.sys.loadSnap(3)">4</button>
+            </div>
+        </div>
+
+        <div class="viz-container">
+            <div class="mod-title" style="width:100%;">OSCILLOSCOPE <span>WAVE</span></div>
+            <canvas id="waveform" class="wave"></canvas>
+            <div class="mod-title" style="width:100%; margin-top:10px;">FFT HORIZON <span>3D TUNNEL</span></div>
+            <canvas id="viz" class="radial"></canvas>
+        </div>
+    </aside>
+</main>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>

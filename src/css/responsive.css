@@ -1,0 +1,452 @@
+/**
+ * Responsive Design for NEXUS-X
+ * Mobile and tablet layouts
+ */
+
+/* ========================================
+   MEDIA QUERIES - TABLET
+   ======================================== */
+
+@media (max-width: 1200px) {
+  :root {
+    --deck-width: 320px;
+  }
+
+  .deck {
+    position: relative;
+    width: 320px !important;
+  }
+
+  .track-controls {
+    display: none !important;
+  }
+
+  /* Simplified mobile controls */
+  .track-info {
+    width: 60px;
+  }
+
+  .nexus-seq-container {
+    flex: 1 !important;
+  }
+}
+
+/* ========================================
+   MEDIA QUERIES - SMALL TABLET
+   ======================================== */
+
+@media (max-width: 992px) {
+  :root {
+    --header-height: 60px;
+  }
+
+  header.app-bar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 10px;
+    gap: 10px;
+  }
+
+  #timeline {
+    width: 100%;
+    order: 3;
+    margin-top: 10px;
+  }
+
+  /* Move deck to bottom */
+  aside.deck {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100% !important;
+    height: 300px;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    overflow-y: auto;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+  }
+
+  .deck-header {
+    position: sticky;
+    top: 0;
+    background: #080808;
+    z-index: 10;
+  }
+
+  main.workspace {
+    padding-bottom: 320px;
+  }
+
+  /* Hide some UI elements on mobile */
+  .track-info {
+    width: 50px;
+  }
+
+  .track-label {
+    font-size: 9px;
+  }
+
+  .btn-group {
+    transform: scale(0.8);
+  }
+}
+
+/* ========================================
+   MEDIA QUERIES - MOBILE
+   ======================================== */
+
+@media (max-width: 768px) {
+  :root {
+    --header-height: auto;
+  }
+
+  /* Header adjustments */
+  header.app-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px;
+  }
+
+  .brand {
+    font-size: 12px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  #timeline {
+    margin: 10px 0;
+  }
+
+  #bpm-display {
+    text-align: center !important;
+  }
+
+  /* Control buttons - grid layout */
+  .app-bar > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .btn {
+    font-size: 9px;
+    padding: 6px 8px;
+  }
+
+  /* Track adjustments */
+  article.track {
+    padding: 8px;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .track-info {
+    width: 40px;
+  }
+
+  .track-label {
+    font-size: 8px;
+    line-height: 1.2;
+  }
+
+  /* Sequencer - smaller steps */
+  .nexus-seq-container {
+    overflow-x: auto;
+  }
+
+  /* Deck - full screen drawer */
+  aside.deck {
+    height: 60vh;
+  }
+
+  /* Module adjustments */
+  .module {
+    padding: 12px;
+  }
+
+  .mod-title {
+    font-size: 8px;
+  }
+
+  /* Nexus components - smaller */
+  .nexus-btn-container {
+    transform: scale(0.85);
+  }
+
+  /* Snapshot grid */
+  .snapshot-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 5px;
+  }
+
+  .snap-btn {
+    padding: 8px 0;
+    font-size: 10px;
+  }
+
+  /* Action grid */
+  .action-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px;
+  }
+
+  .action-btn {
+    padding: 6px;
+    font-size: 8px;
+  }
+
+  /* Visualizations */
+  canvas.radial {
+    height: 100px;
+  }
+
+  canvas.wave {
+    height: 40px;
+  }
+
+  /* Toast notifications - smaller */
+  .toast {
+    font-size: 10px;
+    padding: 10px 15px;
+  }
+}
+
+/* ========================================
+   MEDIA QUERIES - SMALL MOBILE
+   ======================================== */
+
+@media (max-width: 480px) {
+  /* Compact header */
+  .brand {
+    font-size: 10px;
+  }
+
+  .btn-ai {
+    display: none; /* Hide AI button on very small screens */
+  }
+
+  /* Ultra compact tracks */
+  article.track {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .track-info {
+    width: 35px;
+  }
+
+  .track-label {
+    display: none; /* Hide track names */
+  }
+
+  /* Hide some buttons */
+  .mutate-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
+
+  /* Deck - slide-up panel */
+  aside.deck {
+    height: 70vh;
+  }
+
+  /* Scroll indicators for horizontal scrolling */
+  .nexus-seq-container::after {
+    content: '→';
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--primary);
+    opacity: 0.5;
+  }
+
+  /* Help dialog - smaller */
+  .help-card {
+    padding: 20px;
+    max-width: 95%;
+  }
+
+  .help-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+
+  /* Spectral canvas */
+  #spectralCanvas {
+    height: 150px !important;
+  }
+}
+
+/* ========================================
+   LANDSCAPE MOBILE
+   ======================================== */
+
+@media (max-width: 768px) and (orientation: landscape) {
+  aside.deck {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: 40vw !important;
+    height: 100vh;
+    border-left: 1px solid var(--border);
+    border-top: none;
+  }
+
+  main.workspace {
+    padding-right: 40vw;
+    padding-bottom: 0;
+  }
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+
+@media print {
+  header.app-bar,
+  aside.deck,
+  .toast-container,
+  dialog {
+    display: none !important;
+  }
+
+  main.workspace {
+    padding: 0;
+  }
+
+  .sequencer {
+    page-break-inside: avoid;
+  }
+
+  article.track {
+    border: 1px solid #000;
+    break-inside: avoid;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .toast {
+    animation: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --bg: #000;
+    --panel: #111;
+    --border: #fff;
+    --text: #fff;
+  }
+
+  .track {
+    border-left: 4px solid #fff !important;
+  }
+}
+
+/* ========================================
+   TOUCH OPTIMIZATIONS
+   ======================================== */
+
+@media (pointer: coarse) {
+  /* Larger touch targets */
+  .btn,
+  .snap-btn,
+  .action-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .nexus-btn-container > div {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Haptic feedback hints */
+  .btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Prevent accidental touches */
+  .module {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* ========================================
+   DARK MODE SYSTEM
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  /* Already dark by default, but ensure contrast */
+  :root {
+    --bg: #050505;
+    --panel: #111;
+    --text: #eee;
+  }
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: block;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+}
+
+.tablet-only {
+  display: none;
+}
+
+@media (min-width: 769px) and (max-width: 1200px) {
+  .tablet-only {
+    display: block;
+  }
+}
+
+/* ========================================
+   LOADING STATES
+   ======================================== */
+
+@media (max-width: 768px) {
+  #startDialog {
+    padding: 20px;
+  }
+
+  .loader-ring {
+    width: 40px;
+    height: 40px;
+  }
+
+  #aiDialog {
+    padding: 30px 20px;
+  }
+}
