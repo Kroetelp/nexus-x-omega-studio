@@ -32,7 +32,13 @@ const GENRES = {
     // 🔥 NEW HARDCORE GENRES
     'UPTEMPO': { bpmRange: [180, 220], scale: 'phrygian', kit: 'INDUSTRIAL', arpLead: true, progressions: [[0, 0, 0, 0], [0, -1, 0, -2]] },
     'DEUTSCHETEKK': { bpmRange: [150, 180], scale: 'harmonicMinor', kit: 'ACID', arpLead: false, progressions: [[0, 0, -1, 0], [0, 2, 0, -1]] },
-    'OSSITEKK': { bpmRange: [140, 170], scale: 'dorian', kit: 'GLITCH', arpLead: false, progressions: [[0, -1, 0, -2], [0, 0, -1, 0]] }
+    'OSSITEKK': { bpmRange: [140, 170], scale: 'dorian', kit: 'GLITCH', arpLead: false, progressions: [[0, -1, 0, -2], [0, 0, -1, 0]] },
+    // 🐮 PHONK - Drift Phonk / Aggressive Cowbell Beats
+    'PHONK': { bpmRange: [120, 140], scale: 'phrygian', kit: 'PHONK', arpLead: true, progressions: [[0, 0, -1, 0], [0, -2, 0, -1]] },
+    // 🏎️ DRIFT PHONK - Faster, more aggressive
+    'DRIFTPHONK': { bpmRange: [160, 180], scale: 'harmonicMinor', kit: 'PHONK', arpLead: true, progressions: [[0, 0, 0, -1], [0, -1, -2, 0]] },
+    // 💀 DARK PHONK - Horror/Slayer vibes
+    'DARKPHONK': { bpmRange: [130, 150], scale: 'locrian', kit: 'PHONK', arpLead: false, progressions: [[0, -1, 0, -2], [0, 0, -1, -3]] }
 };
 
 // 🎵 GENRE-SPECIFIC PATTERNS - 32-STEP PATTERNS with real musical depth
@@ -313,6 +319,66 @@ const GENRE_PATTERNS = {
         lead: { style: '303-resonance', speed: '16n', range: [0, 3] },
         pad: { style: 'minimal-dark', changeRate: 8 },
         vibe: 'east-germany-warehouse-rave'
+    },
+    // 🐮 PHONK - Drift Phonk / Aggressive Cowbell Beats (Kriegsvideo Sound!)
+    'PHONK': {
+        drums: {
+            // Classic phonk: heavy kick, trap snares, fast hi-hats
+            kick:  [1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0, 1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0],
+            snare: [0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0],
+            hihat: [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
+            clap:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,1, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,1]
+        },
+        cowbell: {
+            // THE iconic phonk cowbell pattern - aggressive and distorted
+            pattern: [1,0,1,0, 1,0,1,0, 1,1,1,0, 1,0,1,1, 1,0,1,0, 1,0,1,0, 1,1,1,0, 1,1,0,1],
+            octave: 4,
+            distortion: 0.8
+        },
+        bass: { style: '808-distorted', density: 0.9, octaveJump: true, distortion: 0.7 },
+        lead: { style: 'dark-memphis', speed: '8n', range: [0, 3] },
+        pad: { style: 'dark-ambient', changeRate: 16 },
+        vibe: 'cowbell-808-memphis-drift-phonk'
+    },
+    // 🏎️ DRIFT PHONK - Faster, Tokyo Drift style
+    'DRIFTPHONK': {
+        drums: {
+            // Faster, more aggressive
+            kick:  [1,0,0,1, 0,0,1,0, 0,0,1,0, 0,1,0,0, 1,0,0,1, 0,0,1,0, 0,0,1,0, 0,1,0,1],
+            snare: [0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0],
+            hihat: [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
+            clap:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,1, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,1]
+        },
+        cowbell: {
+            // Aggressive drift pattern
+            pattern: [1,0,1,1, 1,0,1,0, 1,1,1,0, 1,1,0,1, 1,0,1,1, 1,0,1,0, 1,1,1,0, 1,1,1,1],
+            octave: 4,
+            distortion: 0.9
+        },
+        bass: { style: '808-heavily-distorted', density: 0.95, octaveJump: true, distortion: 0.85 },
+        lead: { style: 'aggressive-rap', speed: '16n', range: [0, 2] },
+        pad: { style: 'tension-build', changeRate: 8 },
+        vibe: 'tokyo-drift-midnight-racing'
+    },
+    // 💀 DARK PHONK - Horror/Slayer vibes
+    'DARKPHONK': {
+        drums: {
+            // Slower, heavier, more menacing
+            kick:  [1,0,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0],
+            snare: [0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0],
+            hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+            clap:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1]
+        },
+        cowbell: {
+            // Slower, more menacing
+            pattern: [1,0,0,0, 1,0,1,0, 0,0,1,0, 1,0,0,0, 1,0,0,0, 1,0,1,0, 0,0,1,0, 1,0,0,1],
+            octave: 3,
+            distortion: 0.95
+        },
+        bass: { style: 'doom-808', density: 0.8, octaveJump: false, distortion: 0.9 },
+        lead: { style: 'horror-synth', speed: '4n', range: [-1, 2] },
+        pad: { style: 'evil-drone', changeRate: 32 },
+        vibe: 'slayer-horror-dark-web'
     }
 };
 
@@ -2191,10 +2257,75 @@ class AudioEngine {
                 else if (i===6) {
                     synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sawtooth" }, envelope:{attack: 0.3, release: 0.4} })
                         .set({maxPolyphony: 10})
-                        .connect(this.reverb); 
-                    const chorus = new Tone.Chorus(2, 3, 0.8).start(); 
-                    synth.connect(chorus); 
-                    type = 'pad'; 
+                        .connect(this.reverb);
+                    const chorus = new Tone.Chorus(2, 3, 0.8).start();
+                    synth.connect(chorus);
+                    type = 'pad';
+                }
+            }
+            // 🐮 PHONK KIT - Kriegsvideo Sound!
+            else if (kitName === 'PHONK') {
+                if (i===0) {
+                    // HEAVY distorted 808 kick
+                    synth = new Tone.MembraneSynth({
+                        pitchDecay: 0.3,
+                        envelope: { attack: 0.001, decay: 0.5, sustain: 0.3, release: 0.2 }
+                    });
+                    const dist = new Tone.Distortion(0.6);
+                    synth.chain(dist, panner);
+                    type = 'kick';
+                }
+                else if (i===1||i===2) {
+                    // Trap-style snares with reverb
+                    synth = new Tone.NoiseSynth({
+                        noise: { type: 'white' },
+                        envelope: { attack: 0.001, decay: 0.2 }
+                    }).connect(this.reverb);
+                    type = 'noise';
+                }
+                else if (i===3) {
+                    // Fast tight hi-hats
+                    synth = new Tone.MetalSynth({
+                        harmonicity: 5.5,
+                        modulationIndex: 40,
+                        envelope: { attack: 0.001, decay: 0.05 }
+                    }).chain(this.hatAutoPanner);
+                    type = 'metal';
+                }
+                else if (i===4) {
+                    // HEAVY distorted 808 bass with portamento
+                    synth = new Tone.MonoSynth({
+                        oscillator: { type: "sine" },
+                        envelope: { attack: 0.01, decay: 0.3, sustain: 0.8, release: 0.3 },
+                        portamento: 0.1
+                    });
+                    const bassDist = new Tone.Distortion(0.4);
+                    const bassCrush = new Tone.BitCrusher(8);
+                    synth.chain(bassDist, bassCrush, panner);
+                    type = 'bass';
+                }
+                else if (i===5) {
+                    // 🐮 COWBELL! The iconic phonk sound
+                    synth = new Tone.FMSynth({
+                        harmonicity: 1.5,
+                        modulationIndex: 15,
+                        oscillator: { type: 'square' },
+                        envelope: { attack: 0.001, decay: 0.15, sustain: 0.2, release: 0.1 }
+                    });
+                    const cowbellDist = new Tone.Distortion(0.7);
+                    const cowbellFilter = new Tone.Filter(800, 'highpass');
+                    synth.chain(cowbellFilter, cowbellDist, panner);
+                    type = 'lead';
+                }
+                else if (i===6) {
+                    // Dark atmospheric pad
+                    synth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: "sawtooth" },
+                        envelope:{attack: 0.5, release: 0.6}
+                    }).set({maxPolyphony: 8}).connect(this.reverb);
+                    const padFilter = new Tone.Filter(400, 'lowpass');
+                    synth.connect(padFilter);
+                    type = 'pad';
                 }
             }
             else { 
@@ -8511,6 +8642,170 @@ window.applyAutoArrangement = function() {
     const template = window.currentArrangementTemplate || 'standard';
     if (window.UIController?.toast) {
         window.UIController.toast(`🎼 Generated ${template} arrangement!`);
+    }
+};
+
+// ============================================================
+// 🐮 PHONK GENERATOR - Kriegsvideo Sound!
+// ============================================================
+
+window.openPhonkGenerator = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:650px;background:linear-gradient(180deg,#0a0a0a,#1a0a1a);border:2px solid #ff0055;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <h2 style="color:#ff0055;font-size:28px;margin:0;text-shadow:0 0 20px #ff0055;">🐮 PHONK GENERATOR</h2>
+                <p style="color:#666;font-size:12px;margin-top:5px;">KRIEGSVIDEO SOUND // DRIFT BEATS // AGGRESSIVE 808</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
+                <button class="phonk-style-btn" data-style="classic" style="background:#1a1a1a;border:2px solid #ff0055;color:#fff;padding:15px;border-radius:8px;cursor:pointer;">
+                    <div style="font-size:24px;">🐮</div>
+                    <div style="font-size:12px;font-weight:700;margin-top:5px;">CLASSIC</div>
+                    <div style="font-size:9px;color:#666;">Memphis Cowbell</div>
+                </button>
+                <button class="phonk-style-btn" data-style="drift" style="background:#1a1a1a;border:2px solid #7c3aed;color:#7c3aed;padding:15px;border-radius:8px;cursor:pointer;">
+                    <div style="font-size:24px;">🏎️</div>
+                    <div style="font-size:12px;font-weight:700;margin-top:5px;">DRIFT</div>
+                    <div style="font-size:9px;color:#666;">Tokyo Highway</div>
+                </button>
+                <button class="phonk-style-btn" data-style="dark" style="background:#1a1a1a;border:2px solid #666;color:#fff;padding:15px;border-radius:8px;cursor:pointer;">
+                    <div style="font-size:24px;">💀</div>
+                    <div style="font-size:12px;font-weight:700;margin-top:5px;">DARK</div>
+                    <div style="font-size:9px;color:#666;">Slayer Vibes</div>
+                </button>
+                <button class="phonk-style-btn" data-style="aggressive" style="background:#1a1a1a;border:2px solid #ff0055;color:#fff;padding:15px;border-radius:8px;cursor:pointer;">
+                    <div style="font-size:24px;">⚔️</div>
+                    <div style="font-size:12px;font-weight:700;margin-top:5px;">AGGRESSIVE</div>
+                    <div style="font-size:9px;color:#666;">War Ready</div>
+                </button>
+                <button class="phonk-style-btn" data-style="chopped" style="background:#1a1a1a;border:2px solid #00ff94;color:#00ff94;padding:15px;border-radius:8px;cursor:pointer;">
+                    <div style="font-size:24px;">✂️</div>
+                    <div style="font-size:12px;font-weight:700;margin-top:5px;">CHOPPED</div>
+                    <div style="font-size:9px;color:#666;">Screwed & Chopped</div>
+                </button>
+                <button class="phonk-style-btn" data-style="house" style="background:#1a1a1a;border:2px solid #f59e0b;color:#f59e0b;padding:15px;border-radius:8px;cursor:pointer;">
+                    <div style="font-size:24px;">🏠</div>
+                    <div style="font-size:12px;font-weight:700;margin-top:5px;">PHONK HOUSE</div>
+                    <div style="font-size:9px;color:#666;">4/4 Banger</div>
+                </button>
+            </div>
+
+            <div style="background:#111;padding:15px;border-radius:8px;margin-bottom:15px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                    <div>
+                        <label style="color:#666;font-size:10px;display:block;margin-bottom:5px;">🔥 808 DISTORTION</label>
+                        <input type="range" id="phonkDistortion" min="0" max="100" value="80" style="width:100%;" oninput="document.getElementById('distVal').textContent=this.value+'%'">
+                        <span id="distVal" style="color:#ff0055;font-size:11px;">80%</span>
+                    </div>
+                    <div>
+                        <label style="color:#666;font-size:10px;display:block;margin-bottom:5px;">🔔 COWBELL LEVEL</label>
+                        <input type="range" id="phonkCowbell" min="0" max="100" value="70" style="width:100%;" oninput="document.getElementById('cowVal').textContent=this.value+'%'">
+                        <span id="cowVal" style="color:#f59e0b;font-size:11px;">70%</span>
+                    </div>
+                    <div>
+                        <label style="color:#666;font-size:10px;display:block;margin-bottom:5px;">🎭 BPM</label>
+                        <input type="range" id="phonkBpm" min="100" max="180" value="130" style="width:100%;" oninput="document.getElementById('bpmVal').textContent=this.value">
+                        <span id="bpmVal" style="color:#00ff94;font-size:11px;">130</span>
+                    </div>
+                    <div>
+                        <label style="color:#666;font-size:10px;display:block;margin-bottom:5px;">🎚️ BASS GAIN</label>
+                        <input type="range" id="phonkBass" min="0" max="100" value="90" style="width:100%;" oninput="document.getElementById('bassVal').textContent=this.value+'%'">
+                        <span id="bassVal" style="color:#7c3aed;font-size:11px;">90%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button onclick="window.generatePhonkBeat()" style="flex:2;padding:15px;background:linear-gradient(90deg,#ff0055,#7c3aed);border:none;color:#fff;border-radius:6px;cursor:pointer;font-weight:800;font-size:14px;">🐮 GENERATE PHONK BEAT</button>
+                <button onclick="window.generatePhonkWithVideo()" style="flex:1;padding:15px;background:#1a1a1a;border:2px solid #ff0055;color:#ff0055;border-radius:6px;cursor:pointer;font-weight:700;">🎬 + VIDEO FX</button>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    // Style button selection
+    dialog.querySelectorAll('.phonk-style-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            window.phonkStyle = b.dataset.style;
+            dialog.querySelectorAll('.phonk-style-btn').forEach((bb: Element) => {
+                const bbElem = bb as HTMLElement;
+                bbElem.style.opacity = '0.5';
+            });
+            b.style.opacity = '1';
+        };
+    });
+
+    // Set default style
+    window.phonkStyle = 'classic';
+
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.generatePhonkBeat = function() {
+    const style = window.phonkStyle || 'classic';
+    const distortion = parseInt((document.getElementById('phonkDistortion') as HTMLInputElement)?.value || '80');
+    const cowbell = parseInt((document.getElementById('phonkCowbell') as HTMLInputElement)?.value || '70');
+    const bpm = parseInt((document.getElementById('phonkBpm') as HTMLInputElement)?.value || '130');
+    const bass = parseInt((document.getElementById('phonkBass') as HTMLInputElement)?.value || '90');
+
+    // Set genre based on style
+    let genre = 'PHONK';
+    if (style === 'drift') genre = 'DRIFTPHONK';
+    if (style === 'dark') genre = 'DARKPHONK';
+
+    // Apply to engine if available
+    if (window.sys?.setGenre) {
+        window.sys.setGenre(genre);
+    }
+    if (window.engine?.setBPM) {
+        window.engine.setBPM(bpm);
+    }
+
+    // Set cowbell/distortion settings
+    window.phonkSettings = { distortion, cowbell, bass, style };
+
+    // Generate patterns
+    if (window.seq?.randomizeAll) {
+        window.seq.randomizeAll();
+    }
+
+    if (window.UIController?.toast) {
+        const messages: Record<string, string> = {
+            'classic': '🐮 CLASSIC PHONK - Memphis Cowbell!',
+            'drift': '🏎️ DRIFT PHONK - Tokyo Highway!',
+            'dark': '💀 DARK PHONK - Slayer Vibes!',
+            'aggressive': '⚔️ AGGRESSIVE PHONK - War Ready!',
+            'chopped': '✂️ CHOPPED & SCREWED!',
+            'house': '🏠 PHONK HOUSE - 4/4 Banger!'
+        };
+        window.UIController.toast(messages[style] || '🐮 PHONK Generated!');
+    }
+};
+
+window.generatePhonkWithVideo = function() {
+    window.generatePhonkBeat();
+
+    // Add video-style effects
+    if (window.engine) {
+        // Heavy sidechain
+        window.sidechainSettings = { amount: 70, attack: 5, release: 150 };
+
+        // Bitcrush for that lo-fi video aesthetic
+        if (window.engine.bitcrushDepth) {
+            window.engine.bitcrushDepth.value = 0.6;
+        }
+        if (window.engine.bitcrushFreq) {
+            window.engine.bitcrushFreq.value = 0.4;
+        }
+    }
+
+    if (window.UIController?.toast) {
+        window.UIController.toast('🎬 PHONK + VIDEO FX Applied! Ready for epic content!');
     }
 };
 
