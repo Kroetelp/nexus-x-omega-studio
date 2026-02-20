@@ -425,6 +425,247 @@ class JsFmSynth {
     }
 }
 
+// ============================================================
+// BRASS / WIND SYNTH (Physical modeling-inspired)
+// ============================================================
+class JsBrassSynth {
+    constructor(id, polyphony = 4) {
+        this.id = id;
+        this.polyphony = polyphony;
+
+        // Parameters (BrassParam enum)
+        this.breathPressure = 0.7;
+        this.lipTension = 0.5;
+        this.vibratoRate = 5;
+        this.vibratoDepth = 0.2;
+        this.growl = 0;
+
+        // Formants
+        this.formant1 = { freq: 500, gain: 0.8 };
+        this.formant2 = { freq: 1500, gain: 0.6 };
+        this.formant3 = { freq: 2500, gain: 0.4 };
+
+        // Envelope
+        this.attack = 0.03;
+        this.decay = 0.1;
+        this.sustain = 0.8;
+        this.release = 0.2;
+
+        // Special
+        this.tongueAttack = 0.5;
+        this.flutter = 0;
+        this.muteType = 0;
+        this.muteAmount = 0;
+
+        // Pitch
+        this.glide = 0.02;
+
+        // Master
+        this.masterVol = 0.7;
+        this.pan = 0;
+
+        // Voice state
+        this.voices = [];
+        for (let i = 0; i < polyphony; i++) {
+            this.voices.push({
+                active: false,
+                note: 60,
+                velocity: 0,
+                env: 0,
+                envState: 'off',
+                phase: 0,
+                breathPhase: 0,
+                vibratoPhase: 0,
+                glideFreq: 440,
+                glideTarget: 440,
+                lipState: 0,
+            });
+        }
+    }
+
+    setParameter(p, v) {
+        switch (p) {
+            case 0: this.breathPressure = v; break;
+            case 1: this.lipTension = v; break;
+            case 2: this.vibratoRate = v; break;
+            case 3: this.vibratoDepth = v; break;
+            case 4: this.growl = v; break;
+
+            case 10: this.formant1.freq = v; break;
+            case 11: this.formant1.gain = v; break;
+            case 12: this.formant2.freq = v; break;
+            case 13: this.formant2.gain = v; break;
+            case 14: this.formant3.freq = v; break;
+            case 15: this.formant3.gain = v; break;
+
+            case 20: this.attack = v; break;
+            case 21: this.decay = v; break;
+            case 22: this.sustain = v; break;
+            case 23: this.release = v; break;
+
+            case 30: this.tongueAttack = v; break;
+            case 31: this.flutter = v; break;
+
+            case 40: this.muteType = v; break;
+            case 41: this.muteAmount = v; break;
+
+            case 50: this.glide = v; break;
+
+            case 60: this.masterVol = v; break;
+            case 61: this.pan = v; break;
+        }
+    }
+
+    noteOn(note, vel) {
+        // Find free voice
+        let voice = this.voices.find(v => !v.active);
+        if (!voice) voice = this.voices[0]; // Steal
+
+        const freq = 440 * Math.pow(2, (note - 69) / 12);
+        voice.active = true;
+        voice.note = note;
+        voice.velocity = vel;
+        voice.env = 0;
+        voice.envState = 'attack';
+        voice.phase = 0;
+        voice.breathPhase = Math.random() * Math.PI * 2;
+        voice.vibratoPhase = 0;
+        voice.glideFreq = this.glide > 0 ? voice.glideFreq : freq;
+        voice.glideTarget = freq;
+        voice.lipState = 0;
+    }
+
+    noteOff(note) {
+        for (const voice of this.voices) {
+            if (voice.active && voice.note === note) {
+                voice.envState = 'release';
+            }
+        }
+    }
+
+    // Simple formant filter approximation
+    applyFormants(sample, freq, dt) {
+        // Approximate formants using resonant filtering
+        let out = sample * 0.3;
+
+        // Formant 1 (mouth cavity)
+        const f1Coef = Math.exp(-Math.PI * dt * this.formant1.freq * 0.5);
+        out += sample * this.formant1.gain * 0.3 * Math.sin(freq * dt * 2 * Math.PI * (this.formant1.freq / freq));
+
+        // Formant 2 (throat)
+        const f2Coef = Math.exp(-Math.PI * dt * this.formant2.freq * 0.3);
+        out += sample * this.formant2.gain * 0.2 * Math.sin(freq * dt * 4 * Math.PI * (this.formant2.freq / freq));
+
+        // Formant 3 (bell)
+        out += sample * this.formant3.gain * 0.1 * Math.sin(freq * dt * 6 * Math.PI * (this.formant3.freq / freq));
+
+        return out;
+    }
+
+    process(buf, n, sr) {
+        const dt = 1 / sr;
+
+        for (const voice of this.voices) {
+            if (!voice.active && voice.envState === 'off') continue;
+
+            // Envelope
+            if (voice.envState === 'attack') {
+                const attackRate = this.attack > 0 ? dt / this.attack : 1;
+                // Tongue attack adds initial transient
+                const tongueBoost = this.tongueAttack * 0.3 * Math.exp(-voice.env * 20);
+                voice.env += attackRate * (1 + tongueBoost);
+                if (voice.env >= 1) {
+                    voice.env = 1;
+                    voice.envState = 'decay';
+                }
+            } else if (voice.envState === 'decay') {
+                const decayRate = this.decay > 0 ? dt / this.decay : 0;
+                voice.env -= decayRate * (1 - this.sustain);
+                if (voice.env <= this.sustain) {
+                    voice.env = this.sustain;
+                    voice.envState = 'sustain';
+                }
+            } else if (voice.envState === 'release') {
+                const releaseRate = this.release > 0 ? dt / this.release : 1;
+                voice.env -= releaseRate;
+                if (voice.env <= 0) {
+                    voice.env = 0;
+                    voice.envState = 'off';
+                    voice.active = false;
+                    continue;
+                }
+            }
+
+            // Glide
+            if (this.glide > 0 && voice.glideFreq !== voice.glideTarget) {
+                const glideSpeed = dt / this.glide;
+                voice.glideFreq += (voice.glideTarget - voice.glideFreq) * glideSpeed * 5;
+            }
+
+            // Vibrato LFO
+            voice.vibratoPhase += dt * this.vibratoRate * Math.PI * 2;
+            const vibrato = Math.sin(voice.vibratoPhase) * this.vibratoDepth * 0.1;
+
+            // Growl modulation
+            voice.breathPhase += dt * 30 * Math.PI * 2;
+            const growlMod = this.growl * Math.sin(voice.breathPhase) * 0.3;
+
+            // Flutter tongue effect
+            const flutterMod = this.flutter * Math.sin(voice.breathPhase * 8) * 0.2;
+
+            // Calculate frequency with modulations
+            const freq = voice.glideFreq * (1 + vibrato + growlMod + flutterMod);
+
+            // Lip reed simulation (simplified physical model)
+            // The lip oscillates based on pressure difference
+            const lipFreq = freq * (0.5 + this.lipTension * 0.5);
+            const pressure = this.breathPressure * voice.env;
+            voice.lipState += dt * lipFreq * Math.PI * 2;
+            const lipOsc = Math.sin(voice.lipState);
+
+            // Non-linear reed behavior
+            let reedOut = lipOsc * pressure;
+            if (reedOut > 0) reedOut *= (1 - this.lipTension * 0.3);
+            if (reedOut < 0) reedOut *= 0.5; // Asymmetric
+
+            // Add breath noise
+            const breathNoise = (Math.random() * 2 - 1) * 0.1 * pressure * (1 - this.lipTension);
+
+            // Combine
+            let sample = (reedOut + breathNoise) * voice.velocity * pressure;
+
+            // Apply formants
+            sample = this.applyFormants(sample, freq, dt);
+
+            // Mute effect (low-pass + notch)
+            if (this.muteType > 0 && this.muteAmount > 0) {
+                const muteFactor = 1 - this.muteAmount * 0.5;
+                sample *= muteFactor;
+                // Add metallic resonance for harmon mute
+                if (this.muteType === 2) {
+                    sample += sample * 0.3 * Math.sin(voice.phase * 3);
+                }
+            }
+
+            // Soft clipping for warmth
+            sample = Math.tanh(sample);
+
+            // Output
+            for (let i = 0; i < n; i++) {
+                buf[i * 2] += sample * this.masterVol * (1 - Math.max(0, this.pan));
+                buf[i * 2 + 1] += sample * this.masterVol * (1 + Math.min(0, this.pan));
+            }
+        }
+    }
+
+    reset() {
+        for (const voice of this.voices) {
+            voice.active = false;
+            voice.envState = 'off';
+        }
+    }
+}
+
 class JsEngine {
     constructor() {
         this.sampleRate = 44100;
@@ -439,7 +680,8 @@ class JsEngine {
             case 0: inst = new JsSynth(id, poly); break;      // Standard synth
             case 1: inst = new JsDrum(id); break;              // Drum
             case 2: inst = new JsFx(id); break;                // FX processor
-            case 3: inst = new JsFmSynth(id, poly || 4); break; // FM Synth (new!)
+            case 3: inst = new JsFmSynth(id, poly || 4); break; // FM Synth
+            case 5: inst = new JsBrassSynth(id, poly || 4); break; // Brass/Wind
             default: return false;
         }
         this.instruments.set(id, inst);

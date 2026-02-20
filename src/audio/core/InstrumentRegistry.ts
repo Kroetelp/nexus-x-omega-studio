@@ -8,6 +8,7 @@ import { SynthController } from '../instruments/SynthController';
 import { DrumController, DrumType } from '../instruments/DrumController';
 import { FxController } from '../instruments/FxController';
 import { FmSynthController } from '../instruments/FmSynthController';
+import { BrassController, BrassType } from '../instruments/BrassController';
 import {
     InstrumentConfig,
     InstrumentType,
@@ -66,6 +67,7 @@ export class InstrumentRegistry {
         options?: {
             polyphony?: number;
             drumType?: DrumType;
+            brassType?: BrassType;
             id?: number;
         }
     ): InstrumentController {
@@ -103,6 +105,10 @@ export class InstrumentRegistry {
 
             case 'fm':
                 controller = new FmSynthController(config);
+                break;
+
+            case 'brass':
+                controller = new BrassController(config, options?.brassType ?? BrassType.TRUMPET);
                 break;
 
             default:
@@ -173,6 +179,13 @@ export class InstrumentRegistry {
      */
     getFmSynth(id: number): FmSynthController | undefined {
         return this.getInstrument<FmSynthController>(id);
+    }
+
+    /**
+     * Get a brass/wind instrument by ID (typed)
+     */
+    getBrass(id: number): BrassController | undefined {
+        return this.getInstrument<BrassController>(id);
     }
 
     /**
@@ -364,6 +377,7 @@ export class InstrumentRegistry {
             fx: 2,
             fm: 3,
             sampler: 4,
+            brass: 5,
             pad: 0,  // Pad is a type of synth
         };
         return types[type] ?? 0;
