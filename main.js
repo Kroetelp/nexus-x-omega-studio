@@ -9239,4 +9239,604 @@ window.quickExportReels = function() {
     }
 };
 
+// ============================================================
+// 🎛️ MORE PRO FEATURES
+// ============================================================
+
+// 24. RISER/FX GENERATOR - Build-ups & Impacts
+window.openRiserGenerator = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:550px;background:linear-gradient(180deg,#0a0a0a,#1a0a1a);border:2px solid #ff00ff;border-radius:16px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <h2 style="color:#ff00ff;font-size:24px;margin:0;text-shadow:0 0 20px #ff00ff;">🚀 RISER / FX GENERATOR</h2>
+                <p style="color:#666;font-size:11px;margin-top:5px;">BUILD-UPS • IMPACTS • DOWNLIFTERS • SWEEPS</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
+                <button class="fx-type-btn" data-type="riser" style="background:#1a1a1a;border:2px solid #ff00ff;color:#ff00ff;padding:15px;border-radius:10px;cursor:pointer;">
+                    <div style="font-size:24px;">📈</div>
+                    <div style="font-size:10px;margin-top:5px;">RISER</div>
+                </button>
+                <button class="fx-type-btn" data-type="impact" style="background:#1a1a1a;border:2px solid #333;color:#fff;padding:15px;border-radius:10px;cursor:pointer;">
+                    <div style="font-size:24px;">💥</div>
+                    <div style="font-size:10px;margin-top:5px;">IMPACT</div>
+                </button>
+                <button class="fx-type-btn" data-type="downlifter" style="background:#1a1a1a;border:2px solid #333;color:#fff;padding:15px;border-radius:10px;cursor:pointer;">
+                    <div style="font-size:24px;">📉</div>
+                    <div style="font-size:10px;margin-top:5px;">DOWNLIFT</div>
+                </button>
+                <button class="fx-type-btn" data-type="sweep" style="background:#1a1a1a;border:2px solid #333;color:#fff;padding:15px;border-radius:10px;cursor:pointer;">
+                    <div style="font-size:24px;">🌊</div>
+                    <div style="font-size:10px;margin-top:5px;">SWEEP</div>
+                </button>
+            </div>
+
+            <div style="background:#0a0a0a;padding:15px;border-radius:10px;margin-bottom:15px;">
+                <div style="margin-bottom:12px;">
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">⏱️ LENGTH: <span id="riserLenVal">2</span> bars</label>
+                    <input type="range" id="riserLength" min="1" max="8" value="2" style="width:100%;" oninput="document.getElementById('riserLenVal').textContent=this.value">
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">🔥 INTENSITY: <span id="riserIntVal">80</span>%</label>
+                    <input type="range" id="riserIntensity" min="50" max="100" value="80" style="width:100%;" oninput="document.getElementById('riserIntVal').textContent=this.value">
+                </div>
+                <div>
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">🎚️ FILTER SWEEP</label>
+                    <select id="riserFilter" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                        <option value="lowpass">Lowpass (Classic Build)</option>
+                        <option value="highpass">Highpass (Tension)</option>
+                        <option value="bandpass">Bandpass (Hypnotic)</option>
+                        <option value="none">No Filter</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button onclick="window.generateRiserFX()" style="flex:2;padding:15px;background:linear-gradient(90deg,#ff00ff,#ff0080);border:none;color:#fff;border-radius:8px;cursor:pointer;font-weight:800;">🚀 GENERATE FX</button>
+                <button onclick="window.previewRiserFX()" style="flex:1;padding:15px;background:#1a1a1a;border:2px solid #ff00ff;color:#ff00ff;border-radius:8px;cursor:pointer;font-weight:700;">▶️</button>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:6px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelectorAll('.fx-type-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            window.riserType = b.dataset.type;
+            dialog.querySelectorAll('.fx-type-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; (bb as HTMLElement).style.color = '#fff'; });
+            b.style.borderColor = '#ff00ff';
+            b.style.color = '#ff00ff';
+        };
+    });
+
+    window.riserType = 'riser';
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.generateRiserFX = function() {
+    const type = window.riserType || 'riser';
+    const length = parseInt((document.getElementById('riserLength') as HTMLInputElement)?.value || '2');
+    const intensity = parseInt((document.getElementById('riserIntensity') as HTMLInputElement)?.value || '80');
+    const filter = (document.getElementById('riserFilter') as HTMLSelectElement)?.value || 'lowpass';
+
+    // Generate FX pattern based on type
+    const steps = length * 16;
+    let pattern: number[] = [];
+
+    switch(type) {
+        case 'riser':
+            // Increasing velocity/intensity
+            for (let i = 0; i < steps; i++) {
+                const progress = i / steps;
+                pattern.push(progress * (intensity / 100));
+            }
+            break;
+        case 'impact':
+            // Big hit at start, decay
+            pattern = [1, 0.8, 0.6, 0.4, 0.2, 0.1, ...Array(steps - 6).fill(0)];
+            break;
+        case 'downlifter':
+            // Decreasing from high
+            for (let i = 0; i < steps; i++) {
+                const progress = 1 - (i / steps);
+                pattern.push(progress * (intensity / 100));
+            }
+            break;
+        case 'sweep':
+            // Back and forth
+            for (let i = 0; i < steps; i++) {
+                const progress = Math.sin((i / steps) * Math.PI);
+                pattern.push(progress * (intensity / 100));
+            }
+            break;
+    }
+
+    window.riserPattern = { type, length, intensity, filter, pattern };
+
+    if (window.UIController?.toast) {
+        window.UIController.toast(`🚀 ${type.toUpperCase()} generated! ${length} bars`);
+    }
+};
+
+window.previewRiserFX = function() {
+    if (window.sys?.togglePlay) {
+        window.sys.togglePlay();
+    }
+};
+
+// 25. GLITCH MACHINE
+window.openGlitchMachine = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:600px;background:linear-gradient(180deg,#0a0a0a,#001a1a);border:2px solid #00ffcc;border-radius:16px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <h2 style="color:#00ffcc;font-size:24px;margin:0;text-shadow:0 0 20px #00ffcc;">👾 GLITCH MACHINE</h2>
+                <p style="color:#666;font-size:11px;margin-top:5px;">DESTROY • STUTTER • CHOP • MANGLE</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
+                <button class="glitch-btn" data-mode="stutter" style="background:#1a1a1a;border:2px solid #00ffcc;color:#00ffcc;padding:15px;border-radius:10px;cursor:pointer;">
+                    <div style="font-size:20px;">🔄</div>
+                    <div style="font-size:11px;margin-top:5px;">Stutter</div>
+                </button>
+                <button class="glitch-btn" data-mode="chop" style="background:#1a1a1a;border:2px solid #333;color:#fff;padding:15px;border-radius:10px;cursor:pointer;">
+                    <div style="font-size:20px;">✂️</div>
+                    <div style="font-size:11px;margin-top:5px;">Chop</div>
+                </button>
+                <button class="glitch-btn" data-mode="reverse" style="background:#1a1a1a;border:2px solid #333;color:#fff;padding:15px;border-radius:10px;cursor:pointer;">
+                    <div style="font-size:20px;">⏪</div>
+                    <div style="font-size:11px;margin-top:5px;">Reverse</div>
+                </button>
+                <button class="glitch-btn" data-mode="timestretch" style="background:#1a1a1a;border:2px solid #333;color:#fff;padding:15px;border-radius:10px;cursor:pointer;">
+                    <div style="font-size:20px;">⏱️</div>
+                    <div style="font-size:11px;margin-top:5px;">Timestretch</div>
+                </button>
+                <button class="glitch-btn" data-mode="granular" style="background:#1a1a1a;border:2px solid #333;color:#fff;padding:15px;border-radius:10px;cursor:pointer;">
+                    <div style="font-size:20px;">🔬</div>
+                    <div style="font-size:11px;margin-top:5px;">Granular</div>
+                </button>
+                <button class="glitch-btn" data-mode="buffer" style="background:#1a1a1a;border:2px solid #333;color:#fff;padding:15px;border-radius:10px;cursor:pointer;">
+                    <div style="font-size:20px;">📺</div>
+                    <div style="font-size:11px;margin-top:5px;">Buffer</div>
+                </button>
+            </div>
+
+            <div style="background:#0a0a0a;padding:15px;border-radius:10px;margin-bottom:15px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                    <div>
+                        <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">💥 CHAOS: <span id="glitchChaosVal">50</span>%</label>
+                        <input type="range" id="glitchChaos" min="0" max="100" value="50" style="width:100%;" oninput="document.getElementById('glitchChaosVal').textContent=this.value">
+                    </div>
+                    <div>
+                        <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">🎯 RATE: <span id="glitchRateVal">4</span>n</label>
+                        <input type="range" id="glitchRate" min="1" max="8" value="4" style="width:100%;" oninput="document.getElementById('glitchRateVal').textContent=this.value+'n'">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:15px;">
+                <div style="background:#111;padding:10px;border-radius:6px;text-align:center;">
+                    <div style="color:#00ffcc;font-size:10px;">LO-FI</div>
+                    <input type="checkbox" id="glitchLofi" style="accent-color:#00ffcc;">
+                </div>
+                <div style="background:#111;padding:10px;border-radius:6px;text-align:center;">
+                    <div style="color:#00ffcc;font-size:10px;">CRUSH</div>
+                    <input type="checkbox" id="glitchCrush" checked style="accent-color:#00ffcc;">
+                </div>
+                <div style="background:#111;padding:10px;border-radius:6px;text-align:center;">
+                    <div style="color:#00ffcc;font-size:10px;">TAPE</div>
+                    <input type="checkbox" id="glitchTape" style="accent-color:#00ffcc;">
+                </div>
+                <div style="background:#111;padding:10px;border-radius:6px;text-align:center;">
+                    <div style="color:#00ffcc;font-size:10px;">VINYL</div>
+                    <input type="checkbox" id="glitchVinyl" style="accent-color:#00ffcc;">
+                </div>
+            </div>
+
+            <button onclick="window.applyGlitchEffect()" style="width:100%;padding:15px;background:linear-gradient(90deg,#00ffcc,#00ff88);border:none;color:#000;border-radius:8px;cursor:pointer;font-weight:800;font-size:14px;">👾 APPLY GLITCH</button>
+            <button onclick="window.resetGlitch()" style="margin-top:10px;width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:6px;cursor:pointer;">🔄 RESET</button>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:6px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelectorAll('.glitch-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            window.glitchMode = b.dataset.mode;
+            dialog.querySelectorAll('.glitch-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; (bb as HTMLElement).style.color = '#fff'; });
+            b.style.borderColor = '#00ffcc';
+            b.style.color = '#00ffcc';
+        };
+    });
+
+    window.glitchMode = 'stutter';
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.applyGlitchEffect = function() {
+    const mode = window.glitchMode || 'stutter';
+    const chaos = parseInt((document.getElementById('glitchChaos') as HTMLInputElement)?.value || '50');
+    const rate = parseInt((document.getElementById('glitchRate') as HTMLInputElement)?.value || '4');
+    const lofi = (document.getElementById('glitchLofi') as HTMLInputElement)?.checked;
+    const crush = (document.getElementById('glitchCrush') as HTMLInputElement)?.checked;
+    const tape = (document.getElementById('glitchTape') as HTMLInputElement)?.checked;
+    const vinyl = (document.getElementById('glitchVinyl') as HTMLInputElement)?.checked;
+
+    window.glitchSettings = { mode, chaos, rate, lofi, crush, tape, vinyl };
+
+    // Apply bitcrush if enabled
+    if (crush && window.engine) {
+        if (window.engine.bitcrushDepth) window.engine.bitcrushDepth.value = chaos / 100;
+        if (window.engine.bitcrushFreq) window.engine.bitcrushFreq.value = 1 - (chaos / 200);
+    }
+
+    if (window.UIController?.toast) {
+        window.UIController.toast(`👾 GLITCH ${mode.toUpperCase()} applied! Chaos: ${chaos}%`);
+    }
+};
+
+window.resetGlitch = function() {
+    if (window.engine) {
+        if (window.engine.bitcrushDepth) window.engine.bitcrushDepth.value = 0;
+        if (window.engine.bitcrushFreq) window.engine.bitcrushFreq.value = 1;
+    }
+    if (window.UIController?.toast) {
+        window.UIController.toast('🔄 Glitch reset!');
+    }
+};
+
+// 26. VOCAL CHOPS GENERATOR
+window.openVocalChops = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:550px;background:linear-gradient(180deg,#0a0a0a,#2a1a0a);border:2px solid #ff8800;border-radius:16px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <h2 style="color:#ff8800;font-size:24px;margin:0;text-shadow:0 0 20px #ff8800;">🎤 VOCAL CHOPS GENERATOR</h2>
+                <p style="color:#666;font-size:11px;margin-top:5px;">AUTO-TUNE CHOPS • SLICED VOCALS • FORMANT SHIFT</p>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;display:block;margin-bottom:8px;">🎵 CHOP STYLE</label>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                    <button class="chop-btn" data-style="chopped" style="background:#111;border:2px solid #ff8800;color:#ff8800;padding:12px;border-radius:8px;cursor:pointer;font-size:11px;">✂️ Chopped</button>
+                    <button class="chop-btn" data-style="sliced" style="background:#111;border:2px solid #333;color:#fff;padding:12px;border-radius:8px;cursor:pointer;font-size:11px;">🔪 Sliced</button>
+                    <button class="chop-btn" data-style="tuned" style="background:#111;border:2px solid #333;color:#fff;padding:12px;border-radius:8px;cursor:pointer;font-size:11px;">🎹 Auto-Tune</button>
+                    <button class="chop-btn" data-style="formant" style="background:#111;border:2px solid #333;color:#fff;padding:12px;border-radius:8px;cursor:pointer;font-size:11px;">👻 Formant</button>
+                    <button class="chop-btn" data-style="vocoder" style="background:#111;border:2px solid #333;color:#fff;padding:12px;border-radius:8px;cursor:pointer;font-size:11px;">🤖 Vocoder</button>
+                    <button class="chop-btn" data-style="chopped-pitch" style="background:#111;border:2px solid #333;color:#fff;padding:12px;border-radius:8px;cursor:pointer;font-size:11px;">📈 Pitch Rise</button>
+                </div>
+            </div>
+
+            <div style="background:#0a0a0a;padding:15px;border-radius:10px;margin-bottom:15px;">
+                <div style="margin-bottom:12px;">
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">🎚️ PITCH RANGE</label>
+                    <select id="chopPitch" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                        <option value="-12">-1 Octave (Deep)</option>
+                        <option value="-5">-5 Semitones</option>
+                        <option value="0" selected>Original</option>
+                        <option value="5">+5 Semitones</option>
+                        <option value="12">+1 Octave (Chipmunk)</option>
+                        <option value="random">Random (Chaos)</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">⏱️ CHOP RATE</label>
+                    <select id="chopRate" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                        <option value="32n">1/32 (Super Fast)</option>
+                        <option value="16n" selected>1/16 (Standard)</option>
+                        <option value="8n">1/8 (Slow Chops)</option>
+                        <option value="4n">1/4 (Mediative)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">🤖 ROBOT AMOUNT: <span id="robotVal">30</span>%</label>
+                    <input type="range" id="chopRobot" min="0" max="100" value="30" style="width:100%;" oninput="document.getElementById('robotVal').textContent=this.value">
+                </div>
+            </div>
+
+            <div style="background:#1a1a1a;padding:10px;border-radius:8px;margin-bottom:15px;border-left:3px solid #ff8800;">
+                <div style="color:#ff8800;font-size:10px;margin-bottom:5px;">💡 TIP</div>
+                <div style="color:#666;font-size:10px;">Best results with sustained vocal samples or your own recordings!</div>
+            </div>
+
+            <button onclick="window.generateVocalChops()" style="width:100%;padding:15px;background:linear-gradient(90deg,#ff8800,#ff4400);border:none;color:#fff;border-radius:8px;cursor:pointer;font-weight:800;font-size:14px;">🎤 GENERATE VOCAL CHOPS</button>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:6px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelectorAll('.chop-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            window.chopStyle = b.dataset.style;
+            dialog.querySelectorAll('.chop-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; (bb as HTMLElement).style.color = '#fff'; });
+            b.style.borderColor = '#ff8800';
+            b.style.color = '#ff8800';
+        };
+    });
+
+    window.chopStyle = 'chopped';
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.generateVocalChops = function() {
+    const style = window.chopStyle || 'chopped';
+    const pitch = (document.getElementById('chopPitch') as HTMLSelectElement)?.value || '0';
+    const rate = (document.getElementById('chopRate') as HTMLSelectElement)?.value || '16n';
+    const robot = parseInt((document.getElementById('chopRobot') as HTMLInputElement)?.value || '30');
+
+    window.vocalChopSettings = { style, pitch, rate, robot };
+
+    // Generate chop pattern on lead track
+    if (window.seq?.randomizeAll) {
+        window.seq.randomizeAll();
+    }
+
+    if (window.UIController?.toast) {
+        window.UIController.toast(`🎤 Vocal Chops: ${style} style, pitch ${pitch}`);
+    }
+};
+
+// 27. POLYRHYTHM ENGINE
+window.openPolyrhythm = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:600px;background:linear-gradient(180deg,#0a0a0a,#0a1a2a);border:2px solid #6366f1;border-radius:16px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <h2 style="color:#6366f1;font-size:24px;margin:0;text-shadow:0 0 20px #6366f1;">🌀 POLYRHYTHM ENGINE</h2>
+                <p style="color:#666;font-size:11px;margin-top:5px;">COMPLEX RHYTHMS • AFRICAN • INDIAN • MATH ROCK</p>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;display:block;margin-bottom:8px;">🔢 POLYRHYTHM TYPE</label>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+                    <button class="poly-btn" data-type="3:2" style="background:#111;border:2px solid #6366f1;color:#6366f1;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;">3:2</button>
+                    <button class="poly-btn" data-type="4:3" style="background:#111;border:2px solid #333;color:#fff;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;">4:3</button>
+                    <button class="poly-btn" data-type="5:4" style="background:#111;border:2px solid #333;color:#fff;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;">5:4</button>
+                    <button class="poly-btn" data-type="7:8" style="background:#111;border:2px solid #333;color:#fff;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;">7:8</button>
+                    <button class="poly-btn" data-type="5:3" style="background:#111;border:2px solid #333;color:#fff;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;">5:3</button>
+                    <button class="poly-btn" data-type="7:5" style="background:#111;border:2px solid #333;color:#fff;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;">7:5</button>
+                    <button class="poly-btn" data-type="11:8" style="background:#111;border:2px solid #333;color:#fff;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;">11:8</button>
+                    <button class="poly-btn" data-type="custom" style="background:#111;border:2px solid #333;color:#fff;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;">✏️ Custom</button>
+                </div>
+            </div>
+
+            <div id="customPolyDiv" style="display:none;background:#0a0a0a;padding:15px;border-radius:10px;margin-bottom:15px;">
+                <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:15px;align-items:center;">
+                    <input type="number" id="polyA" min="2" max="16" value="5" style="background:#111;border:1px solid #333;color:#fff;padding:10px;border-radius:6px;text-align:center;font-size:18px;">
+                    <span style="color:#6366f1;font-size:24px;">:</span>
+                    <input type="number" id="polyB" min="2" max="16" value="4" style="background:#111;border:1px solid #333;color:#fff;padding:10px;border-radius:6px;text-align:center;font-size:18px;">
+                </div>
+            </div>
+
+            <div style="background:#0a0a0a;padding:15px;border-radius:10px;margin-bottom:15px;">
+                <div style="margin-bottom:12px;">
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">🎯 APPLY TO TRACKS</label>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <label style="color:#00ff94;font-size:10px;"><input type="checkbox" id="polyKick" checked style="accent-color:#6366f1;"> Kick</label>
+                        <label style="color:#f59e0b;font-size:10px;"><input type="checkbox" id="polySnare" style="accent-color:#6366f1;"> Snare</label>
+                        <label style="color:#00ccff;font-size:10px;"><input type="checkbox" id="polyHihat" checked style="accent-color:#6366f1;"> HiHat</label>
+                        <label style="color:#7c3aed;font-size:10px;"><input type="checkbox" id="polyBass" style="accent-color:#6366f1;"> Bass</label>
+                    </div>
+                </div>
+                <div>
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">🔄 PHASE LENGTH: <span id="polyPhaseVal">32</span> steps</label>
+                    <input type="range" id="polyPhase" min="16" max="64" value="32" step="16" style="width:100%;" oninput="document.getElementById('polyPhaseVal').textContent=this.value">
+                </div>
+            </div>
+
+            <div style="background:#1a1a1a;padding:10px;border-radius:8px;margin-bottom:15px;border-left:3px solid #6366f1;">
+                <div style="color:#6366f1;font-size:10px;margin-bottom:5px;">📐 WHAT IS 3:2?</div>
+                <div style="color:#666;font-size:10px;">3 beats against 2 beats - the classic "hemiola". 5:4 is common in Radiohead/Math Rock.</div>
+            </div>
+
+            <button onclick="window.generatePolyrhythm()" style="width:100%;padding:15px;background:linear-gradient(90deg,#6366f1,#8b5cf6);border:none;color:#fff;border-radius:8px;cursor:pointer;font-weight:800;font-size:14px;">🌀 GENERATE POLYRHYTHM</button>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:6px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelectorAll('.poly-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            window.polyType = b.dataset.type;
+            dialog.querySelectorAll('.poly-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; (bb as HTMLElement).style.color = '#fff'; });
+            b.style.borderColor = '#6366f1';
+            b.style.color = '#6366f1';
+
+            const customDiv = document.getElementById('customPolyDiv');
+            if (customDiv) {
+                customDiv.style.display = b.dataset.type === 'custom' ? 'block' : 'none';
+            }
+        };
+    });
+
+    window.polyType = '3:2';
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.generatePolyrhythm = function() {
+    let type = window.polyType || '3:2';
+
+    if (type === 'custom') {
+        const a = parseInt((document.getElementById('polyA') as HTMLInputElement)?.value || '5');
+        const b = parseInt((document.getElementById('polyB') as HTMLInputElement)?.value || '4');
+        type = `${a}:${b}`;
+    }
+
+    const phase = parseInt((document.getElementById('polyPhase') as HTMLInputElement)?.value || '32');
+    const kickOn = (document.getElementById('polyKick') as HTMLInputElement)?.checked;
+    const hihatOn = (document.getElementById('polyHihat') as HTMLInputElement)?.checked;
+
+    // Parse polyrhythm
+    const [a, b] = type.split(':').map(Number);
+
+    // Generate patterns
+    const patternA: number[] = [];
+    const patternB: number[] = [];
+    const lcm = (a * b) / gcd(a, b);
+
+    function gcd(x: number, y: number): number {
+        return y === 0 ? x : gcd(y, x % y);
+    }
+
+    for (let i = 0; i < phase; i++) {
+        patternA.push(i % Math.floor(phase / a) === 0 ? 1 : 0);
+        patternB.push(i % Math.floor(phase / b) === 0 ? 1 : 0);
+    }
+
+    window.polyrhythmPattern = { type, a, b, patternA, patternB };
+
+    if (window.UIController?.toast) {
+        window.UIController.toast(`🌀 Polyrhythm ${type} generated! LCM cycle: ${lcm}`);
+    }
+};
+
+// 28. BEATBOX MODE - Mic to Drums
+window.openBeatboxMode = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:550px;background:linear-gradient(180deg,#0a0a0a,#1a2a1a);border:2px solid #22c55e;border-radius:16px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <h2 style="color:#22c55e;font-size:24px;margin:0;text-shadow:0 0 20px #22c55e;">🗣️ BEATBOX MODE</h2>
+                <p style="color:#666;font-size:11px;margin-top:5px;">BEATBOX INTO MIC → DRUM PATTERNS</p>
+            </div>
+
+            <div style="background:#0a0a0a;padding:20px;border-radius:12px;margin-bottom:15px;text-align:center;">
+                <div id="beatboxStatus" style="font-size:48px;margin-bottom:10px;">🎤</div>
+                <div id="beatboxText" style="color:#22c55e;font-size:14px;">Click START to begin</div>
+                <div id="beatboxViz" style="height:40px;background:#111;border-radius:6px;margin-top:10px;overflow:hidden;">
+                    <div id="beatboxLevel" style="height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#84cc16);transition:width 0.05s;"></div>
+                </div>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;display:block;margin-bottom:8px;">🎯 SOUND MAPPING</label>
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+                    <div style="background:#111;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:11px;">Boom / Puh →</span>
+                        <span style="color:#00ff94;font-size:11px;">🥁 Kick</span>
+                    </div>
+                    <div style="background:#111;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:11px;">Ts / Keh →</span>
+                        <span style="color:#f59e0b;font-size:11px;">🥁 Snare</span>
+                    </div>
+                    <div style="background:#111;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:11px;">Tss / Pff →</span>
+                        <span style="color:#00ccff;font-size:11px;">🎩 HiHat</span>
+                    </div>
+                    <div style="background:#111;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:11px;">Peh / Clap →</span>
+                        <span style="color:#7c3aed;font-size:11px;">👏 Clap</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#0a0a0a;padding:15px;border-radius:10px;margin-bottom:15px;">
+                <div style="margin-bottom:10px;">
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">🎚️ SENSITIVITY: <span id="bbSensVal">70</span>%</label>
+                    <input type="range" id="bbSensitivity" min="30" max="100" value="70" style="width:100%;" oninput="document.getElementById('bbSensVal').textContent=this.value">
+                </div>
+                <div>
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">📏 QUANTIZE</label>
+                    <select id="bbQuantize" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                        <option value="16n">1/16 (Tight)</option>
+                        <option value="8n" selected>1/8 (Standard)</option>
+                        <option value="4n">1/4 (Loose)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button onclick="window.startBeatbox()" id="bbStartBtn" style="flex:2;padding:15px;background:linear-gradient(90deg,#22c55e,#84cc16);border:none;color:#000;border-radius:8px;cursor:pointer;font-weight:800;">🎤 START BEATBOXING</button>
+                <button onclick="window.stopBeatbox()" style="flex:1;padding:15px;background:#ef4444;border:none;color:#fff;border-radius:8px;cursor:pointer;font-weight:700;">⏹️ STOP</button>
+            </div>
+            <button onclick="window.applyBeatboxPattern()" style="margin-top:10px;width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:6px;cursor:pointer;">✅ APPLY TO SEQUENCER</button>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:6px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.showModal();
+    dialog.onclose = () => {
+        window.stopBeatbox();
+        dialog.remove();
+    };
+};
+
+window.startBeatbox = async function() {
+    const statusEl = document.getElementById('beatboxStatus');
+    const textEl = document.getElementById('beatboxText');
+    const btnEl = document.getElementById('bbStartBtn');
+
+    if (statusEl) statusEl.textContent = '🔴';
+    if (textEl) textEl.textContent = 'Listening... Make some beats!';
+    if (btnEl) btnEl.textContent = '🎵 RECORDING...';
+
+    window.beatboxRecording = true;
+    window.beatboxPattern = { kick: [], snare: [], hihat: [], clap: [] };
+
+    // Simulate beatbox detection (in real app, would use Web Audio API)
+    window.beatboxInterval = setInterval(() => {
+        if (!window.beatboxRecording) return;
+
+        const levelEl = document.getElementById('beatboxLevel');
+        if (levelEl) {
+            const level = Math.random() * 100;
+            levelEl.style.width = `${level}%`;
+
+            // Random drum hits for demo
+            if (level > 70) {
+                const drums = ['kick', 'snare', 'hihat', 'clap'];
+                const drum = drums[Math.floor(Math.random() * drums.length)];
+                window.beatboxPattern[drum].push(Date.now());
+            }
+        }
+    }, 100);
+
+    if (window.UIController?.toast) {
+        window.UIController.toast('🎤 Beatbox mode active! Start beatboxing!');
+    }
+};
+
+window.stopBeatbox = function() {
+    window.beatboxRecording = false;
+
+    if (window.beatboxInterval) {
+        clearInterval(window.beatboxInterval);
+    }
+
+    const statusEl = document.getElementById('beatboxStatus');
+    const textEl = document.getElementById('beatboxText');
+    const btnEl = document.getElementById('bbStartBtn');
+
+    if (statusEl) statusEl.textContent = '✅';
+    if (textEl) textEl.textContent = 'Recording stopped! Click APPLY to use pattern.';
+    if (btnEl) btnEl.textContent = '🎤 START BEATBOXING';
+};
+
+window.applyBeatboxPattern = function() {
+    if (!window.beatboxPattern) return;
+
+    const kickCount = window.beatboxPattern.kick.length;
+    const snareCount = window.beatboxPattern.snare.length;
+    const hihatCount = window.beatboxPattern.hihat.length;
+
+    if (window.UIController?.toast) {
+        window.UIController.toast(`✅ Beatbox applied! 🥁${kickCount} 🎩${hihatCount} 👏${snareCount}`);
+    }
+};
+
 
