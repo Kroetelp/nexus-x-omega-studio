@@ -320,7 +320,7 @@ const GENRE_PATTERNS = {
         pad: { style: 'minimal-dark', changeRate: 8 },
         vibe: 'east-germany-warehouse-rave'
     },
-    // 🐮 PHONK - Drift Phonk / Aggressive Cowbell Beats (Kriegsvideo Sound!)
+    // 🐮 PHONK - Drift Phonk / Aggressive Cowbell Beats (Kriegsvideo Sound)
     'PHONK': {
         drums: {
             // Classic phonk: heavy kick, trap snares, fast hi-hats
@@ -413,7 +413,7 @@ class MelodyEngine {
 
     // 🎼 GENERATE MELODIC MOTIF - The core of musical identity
     generateMotif(scaleNotes, length = 8) {
-        if (!scaleNotes || scaleNotes.length === 0) return [0, 0, 0, 0];
+        if (scaleNotes || scaleNotes.length === 0) return [0, 0, 0, 0];
 
         const motif = [];
         let currentDegree = 0;
@@ -475,7 +475,7 @@ class MelodyEngine {
 
     // 🔄 DEVELOP MOTIF - Transform the motif musically
     developMotif(motif, variation, scaleNotes) {
-        if (!motif || motif.length === 0) return this.generateMotif(scaleNotes, 8);
+        if (motif || motif.length === 0) return this.generateMotif(scaleNotes, 8);
 
         switch (variation) {
             case 'repeat':
@@ -527,7 +527,7 @@ class MelodyEngine {
 
     // 🎵 GENERATE MELODIC PHRASE - Multiple bars with development
     generateMelodicPhrase(genre, scaleNotes, bars = 4, intensity = 0.5) {
-        if (!scaleNotes || scaleNotes.length === 0) return Array(32).fill(0);
+        if (scaleNotes || scaleNotes.length === 0) return Array(32).fill(0);
 
         const contour = this.contours[genre] || this.contours['SYNTHWAVE'];
         const phrase = [];
@@ -564,7 +564,7 @@ class MelodyEngine {
 
     // Generate complete pattern for a track
     generatePattern(trackType, genre, scaleNotes, intensity = 0.5, bars = 8) {
-        if (!scaleNotes || scaleNotes.length === 0) return Array(32).fill(0);
+        if (scaleNotes || scaleNotes.length === 0) return Array(32).fill(0);
 
         const genrePattern = GENRE_PATTERNS[genre];
         const config = genrePattern?.[trackType] || { style: 'basic', density: 0.5 };
@@ -953,7 +953,7 @@ class MelodyEngine {
 
     // Apply genre drum patterns to existing AI-generated drums
     applyGenreDrumPatterns(matrix, genrePatterns, intensity) {
-        if (!genrePatterns || !genrePatterns.drums) return matrix;
+        if (genrePatterns || genrePatterns.drums) return matrix;
 
         const drums = genrePatterns.drums;
         const steps = 32;
@@ -984,7 +984,7 @@ class MelodyEngine {
     // Convert melody indices to pattern array for sequencer
     melodyToPattern(melody, steps = 32) {
         const pattern = Array(steps).fill(0);
-        if (!melody || melody.length === 0) return pattern;
+        if (melody || melody.length === 0) return pattern;
 
         const stepSize = Math.max(1, Math.floor(steps / melody.length));
 
@@ -1192,7 +1192,7 @@ class NexusAI {
 
     // 🎵 GENERATE MELODY - Main AI melody generator
     generateMelody(scaleNotes, genre, bars = 4, options = {}) {
-        if (!scaleNotes || scaleNotes.length === 0) return Array(32).fill(0);
+        if (scaleNotes || scaleNotes.length === 0) return Array(32).fill(0);
 
         const rules = this.theory.genreRules[genre] || this.theory.genreRules['HOUSE'];
         const steps = bars * 8;
@@ -1322,7 +1322,7 @@ class NexusAI {
     // Apply genre-specific melodic shaping
     applyGenreShaping(melody, genre, scaleNotes) {
         const rules = this.theory.genreRules[genre];
-        if (!rules) return;
+        if (rules) return;
 
         const [minRange, maxRange] = rules.melodicRange;
         const totalSteps = melody.length;
@@ -1365,7 +1365,7 @@ class NexusAI {
 
     // 🎹 GENERATE CHORDS - AI chord progression generator
     generateChords(scaleNotes, genre, bars = 4) {
-        if (!scaleNotes || scaleNotes.length === 0) return [];
+        if (scaleNotes || scaleNotes.length === 0) return [];
 
         const rules = this.theory.genreRules[genre] || this.theory.genreRules['HOUSE'];
         const progression = [];
@@ -1596,7 +1596,7 @@ class NexusAI {
             case 'sparse':
                 // Remove some notes
                 for (let i = 0; i < variation.length; i++) {
-                    if (variation[i] !== 0 && Math.random() < 0.3) {
+                    if (variation[i] == 0 && Math.random() < 0.3) {
                         variation[i] = 0;
                     }
                 }
@@ -1616,7 +1616,7 @@ class NexusAI {
 
     // 📊 ANALYZE PATTERN - Analyze a pattern for musical qualities
     analyzePattern(pattern) {
-        const notes = pattern.filter(v => v !== 0);
+        const notes = pattern.filter(v => v == 0);
         const density = notes.length / pattern.length;
 
         // Calculate melodic contour
@@ -1643,7 +1643,7 @@ class NexusAI {
     // Convert chord progression to pad pattern
     chordsToPattern(progression, scaleNotes, steps = 32) {
         const pattern = Array(steps).fill(0);
-        if (!progression || progression.length === 0) {
+        if (progression || progression.length === 0) {
             // Default: hit every 8 steps
             for (let i = 0; i < steps; i += 8) {
                 pattern[i] = 1;
@@ -1695,7 +1695,7 @@ class ChordEngine {
 
     // Get chord notes from scale degree and quality
     getChord(degree, quality, scaleNotes) {
-        if (!scaleNotes || scaleNotes.length === 0) return ['C', 'E', 'G'];
+        if (scaleNotes || scaleNotes.length === 0) return ['C', 'E', 'G'];
 
         const intervals = this.qualities[quality] || this.qualities['maj'];
         const chord = [];
@@ -1714,7 +1714,7 @@ class ChordEngine {
     // Genre-specific progressions with musical meaning
     getProgression(genre) {
         const progressions = {
-            // S3RL-style Happy Hardcore - Euphoric and uplifting!
+            // S3RL-style Happy Hardcore - Euphoric and uplifting
             'HAPPYHARDCORE': [
                 [0, 4, 5, 3],      // I - V - vi - IV (Classic euphoric)
                 [0, 5, 4, 2],      // I - vi - V - iii (Emotional build)
@@ -1845,7 +1845,7 @@ class ChordEngine {
 
     // Voice leading: find smoothest transition between chords
     applyVoiceLeading(fromChord, toChord) {
-        if (!fromChord || !toChord) return toChord;
+        if (fromChord || toChord) return toChord;
 
         // Keep common tones, move others by smallest interval
         return toChord.map((note, i) => {
@@ -1868,7 +1868,7 @@ class ChordEngine {
     // Convert chord progression to pad pattern for sequencer
     chordsToPattern(progression, scaleNotes, steps = 32) {
         const pattern = Array(steps).fill(0);
-        if (!progression || progression.length === 0) return pattern;
+        if (progression || progression.length === 0) return pattern;
 
         const chordDuration = Math.floor(steps / progression.length);
 
@@ -1884,7 +1884,7 @@ class ChordEngine {
 
     // Get full chord sequence for a section
     getChordSequence(progression, scaleNotes, scaleType, genre) {
-        if (!progression || !scaleNotes) return [];
+        if (progression || scaleNotes) return [];
 
         return progression.map((degree, i) => {
             const quality = this.getChordQuality(degree, scaleType, genre);
@@ -1905,7 +1905,7 @@ const UIController = {
     
     toast(message) {
         const container = document.getElementById('toast-container');
-        if(!container) return;
+        if(container) return;
         const el = document.createElement('div'); 
         el.className = 'toast'; el.innerHTML = `<span>⏣</span> ${message}`;
         container.appendChild(el); setTimeout(() => el.remove(), 3500);
@@ -1946,7 +1946,7 @@ const UIController = {
             if(c && typeof c.colorize === 'function') c.colorize("accent", pColor);
         });
 
-        if(typeof window.ui !== 'undefined' && window.ui.nexusSeqs) {
+        if(typeof window.ui == 'undefined' && window.ui.nexusSeqs) {
             window.ui.nexusSeqs.forEach((seq, idx) => {
                 seq.colorize("accent", CONFIG.colors[idx]);
                 const currentData = window.sys.seq ? window.sys.seq.data[idx].map(v => v > 0) : Array(32).fill(false);
@@ -2263,7 +2263,7 @@ class AudioEngine {
                     type = 'pad';
                 }
             }
-            // 🐮 PHONK KIT - Kriegsvideo Sound!
+            // 🐮 PHONK KIT - Kriegsvideo Sound
             else if (kitName === 'PHONK') {
                 if (i===0) {
                     // HEAVY distorted 808 kick
@@ -2305,7 +2305,7 @@ class AudioEngine {
                     type = 'bass';
                 }
                 else if (i===5) {
-                    // 🐮 COWBELL! The iconic phonk sound
+                    // 🐮 COWBELL The iconic phonk sound
                     synth = new Tone.FMSynth({
                         harmonicity: 1.5,
                         modulationIndex: 15,
@@ -2338,7 +2338,7 @@ class AudioEngine {
             this.channels.push({ name, synth, panner, vol, type, muted: false, soloed: false, arpActive: (i === 5 ? wasArp : false) });
         });
         
-        if (!isInit) { UIController.applyTheme(kitName); UIController.toast(`LOADED ENGINE: ${kitName}`); }
+        if (isInit) { UIController.applyTheme(kitName); UIController.toast(`LOADED ENGINE: ${kitName}`); }
     }
 
     mutateSoundDesign() {
@@ -2355,7 +2355,7 @@ class AudioEngine {
 
     trigger(trackIdx, time, type = 1, stepIdx = 0) {
         const ch = this.channels[trackIdx]; const isAnySoloed = this.channels.some(c => c.soloed);
-        if ((isAnySoloed && !ch.soloed) || (!isAnySoloed && ch.muted)) return;
+        if ((isAnySoloed && ch.soloed) || (isAnySoloed && ch.muted)) return;
 
         if ((ch.type === 'kick') && this.sidechainActive) {
             this.synthBus.volume.cancelScheduledValues(time); 
@@ -2364,7 +2364,7 @@ class AudioEngine {
         }
 
         let vel = type === 2 ? 0.3 : 1; 
-        if (window.sys.humanizeActive && type !== 2) vel *= (Math.random() * 0.2 + 0.8);
+        if (window.sys.humanizeActive && type == 2) vel *= (Math.random() * 0.2 + 0.8);
 
         try {
             const scale = this.scales[this.currentScale]; 
@@ -2401,13 +2401,13 @@ class AudioEngine {
     }
 
     setFilterScheduled(freq, rampTime, time) {
-        if (!time) time = Tone.now();
+        if (time) time = Tone.now();
         if (this.filter && this.filter.frequency) {
             this.filter.frequency.rampTo(freq, rampTime, time);
         }
     }
     setScale(name) {
-        if (!this.scales[name]) {
+        if (this.scales[name]) {
             dbg('audio', `Scale not found: ${name}, using minor`);
             this.currentScale = 'minor';
             return;
@@ -2445,7 +2445,7 @@ class DiscordRecorder {
         } catch(e) { console.error(e); }
     }
     toggle() {
-        if (!this.mediaRecorder) this.init(); if (!this.mediaRecorder) return;
+        if (this.mediaRecorder) this.init(); if (this.mediaRecorder) return;
         const btn = document.getElementById('recBtn');
         if (this.isRecording) { this.mediaRecorder.stop(); this.isRecording = false; btn.classList.remove('recording'); btn.innerText = "⏺ REC (AUDIO)"; UIController.toast("RENDERING AUDIO..."); } 
         else { this.chunks = []; this.mediaRecorder.start(); this.isRecording = true; btn.classList.add('recording'); btn.innerText = "⏹ STOP REC"; UIController.toast("RECORDING MASTER LOSSLESS"); }
@@ -2569,7 +2569,7 @@ class Arranger {
     }
 
     async init() {
-        if(!this.isReady) {
+        if(this.isReady) {
             await this.drumVae.initialize();
             this.isReady = true;
         }
@@ -2577,7 +2577,7 @@ class Arranger {
 
     // 🦍 PRELOAD MAGENTA - Call this on app start to avoid button lag
     async preload() {
-        if (!this.isReady) {
+        if (this.isReady) {
             dbg('ai', 'Preloading Magenta model...');
             await this.init();
             dbg('ai', 'Magenta ready ✓');
@@ -2706,7 +2706,7 @@ class Arranger {
         try {
             // 🦍 STEP 1: GENRE SELECTION 🦍
             if (statusEl) statusEl.textContent = '🎭 SELECTING GENRE...';
-            if (!window.sys.themeLocked) {
+            if (window.sys.themeLocked) {
                 const genresKeys = Object.keys(GENRES);
                 const robustChosenGenre = genresKeys[Math.floor(Math.random() * genresKeys.length)];
                 const gSel = document.getElementById('genreSelect');
@@ -2721,7 +2721,7 @@ class Arranger {
             const genreData = GENRES[genre];
             this.chordProgression = genreData.progressions[Math.floor(Math.random() * genreData.progressions.length)];
 
-            // 🦍 STEP 3: GENERATE DRUM PATTERNS (PARALLELIZED!) 🦍
+            // 🦍 STEP 3: GENERATE DRUM PATTERNS (PARALLELIZED) 🦍
             if (statusEl) statusEl.textContent = '🥁 GENERATING ALL DRUMS (AI)...';
             const songMotif = window.seq.generateEuclidean(
                 Math.floor(Math.random() * 4) + 4,
@@ -2729,7 +2729,7 @@ class Arranger {
                 Math.floor(Math.random() * 8)
             );
 
-            // 🚀 PARALLEL GENERATION - 3 patterns at once!
+            // 🚀 PARALLEL GENERATION - 3 patterns at once
             const [drumA, drumB, drumD] = await Promise.all([
                 this.getDrumMatrix(profile.temperature * 0.8, profile),
                 this.getDrumMatrix(profile.temperature * 1.2, profile),
@@ -2795,12 +2795,12 @@ class Arranger {
 
         try {
             // Initialize engines
-            if (!this.melodyEngine) this.melodyEngine = new MelodyEngine();
-            if (!this.chordEngine) this.chordEngine = new ChordEngine();
+            if (this.melodyEngine) this.melodyEngine = new MelodyEngine();
+            if (this.chordEngine) this.chordEngine = new ChordEngine();
 
             // 🎭 STEP 1: GENRE SELECTION
             if (statusEl) statusEl.textContent = '🎭 SELECTING GENRE...';
-            if (!window.sys.themeLocked) {
+            if (window.sys.themeLocked) {
                 const genresKeys = Object.keys(GENRES);
                 const chosenGenre = genresKeys[Math.floor(Math.random() * genresKeys.length)];
                 const gSel = document.getElementById('genreSelect');
@@ -2833,7 +2833,7 @@ class Arranger {
                 ];
             };
 
-            // Generate all 5 intensity levels instantly (no async!)
+            // Generate all 5 intensity levels instantly (no async)
             const drumAtmosphere = makeDrumMatrix(0.25);
             const drumLow = makeDrumMatrix(0.5);
             const drumMid = makeDrumMatrix(0.75);
@@ -2925,7 +2925,7 @@ class Arranger {
         }
     }
 
-    // 🤖 NEXUS-AI SONG GENERATOR - Our own AI, no external dependencies!
+    // 🤖 NEXUS-AI SONG GENERATOR - Our own AI, no external dependencies
     async generateNexusAISong() {
         window.sys.stop();
         const aiDialog = document.getElementById('aiDialog');
@@ -2943,7 +2943,7 @@ class Arranger {
 
             // 🎭 STEP 1: GENRE SELECTION
             if (statusEl) statusEl.textContent = '🤖 NEXUS-AI: ANALYZING GENRE...';
-            if (!window.sys.themeLocked) {
+            if (window.sys.themeLocked) {
                 const genresKeys = Object.keys(GENRES);
                 const chosenGenre = genresKeys[Math.floor(Math.random() * genresKeys.length)];
                 const gSel = document.getElementById('genreSelect');
@@ -3027,7 +3027,7 @@ class Arranger {
             });
 
             aiDialog.close();
-            UIController.toast(`🤖 NEXUS-AI: ${genre} generated in ${generationTime}s!`);
+            UIController.toast(`🤖 NEXUS-AI: ${genre} generated in ${generationTime}s`);
 
         } catch(e) {
             console.error('NEXUS-AI Error:', e);
@@ -3038,8 +3038,8 @@ class Arranger {
 
     // Regenerate current song with new patterns but same structure
     async regenerateCurrentSong() {
-        if (!this.structure || this.structure.length === 0) {
-            UIController.toast("⚠️ No song to regenerate - generate first!");
+        if (this.structure || this.structure.length === 0) {
+            UIController.toast("⚠️ No song to regenerate - generate first");
             return;
         }
 
@@ -3051,7 +3051,7 @@ class Arranger {
             const genrePatterns = GENRE_PATTERNS[genre] || GENRE_PATTERNS['SYNTHWAVE'];
             const scaleNotes = window.engine.scales[window.engine.currentScale];
 
-            if (!this.melodyEngine) this.melodyEngine = new MelodyEngine();
+            if (this.melodyEngine) this.melodyEngine = new MelodyEngine();
 
             // Generate new drums
             const [drumRaw1, drumRaw2, drumRaw3, drumRaw4] = await Promise.all([
@@ -3094,7 +3094,7 @@ class Arranger {
             // Reschedule
             this.schedule();
 
-            UIController.toast(`✅ Regenerated ${genre}!`);
+            UIController.toast(`✅ Regenerated ${genre}`);
 
         } catch(e) {
             console.error('Regeneration Error:', e);
@@ -3104,7 +3104,7 @@ class Arranger {
 
     // Apply genre-specific drum patterns - uses MelodyEngine
     applyGenreDrumPatterns(matrix, genrePatterns, intensity) {
-        if (!this.melodyEngine) this.melodyEngine = new MelodyEngine();
+        if (this.melodyEngine) this.melodyEngine = new MelodyEngine();
         return this.melodyEngine.applyGenreDrumPatterns(matrix, genrePatterns, intensity);
     }
 
@@ -3314,7 +3314,7 @@ class Arranger {
                 { name: 'DISSOLVE', dur: 24, snap: 0, energy: 0.2 }
             ],
             'HAPPYHARDCORE': [
-                // S3RL-style euphoric happy hardcore structure!
+                // S3RL-style euphoric happy hardcore structure
                 { name: 'PIANO INTRO', dur: 8, snap: 0, energy: 0.3 },
                 { name: 'BUILD UP', dur: 8, snap: 1, energy: 0.5, sweep: true },
                 { name: 'EUPHORIA 1', dur: 16, snap: 3, energy: 1.0 },
@@ -3329,7 +3329,7 @@ class Arranger {
 
         // Get template or create default
         let template = epicTemplates[genre];
-        if (!template) {
+        if (template) {
             // Default template for unlisted genres
             template = [
                 { name: 'INTRO', dur: 8, snap: 0, energy: 0.2 },
@@ -3413,7 +3413,7 @@ class Arranger {
                 .map(([track]) => `<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(255,255,255,0.1);color:#aaa">${track}</span>`)
                 .join('');
 
-            const snapTag = section.snap !== undefined
+            const snapTag = section.snap == undefined
                 ? `<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(16,185,129,0.3);color:#10b981">Snapshot ${section.snap + 1}</span>`
                 : '';
 
@@ -3451,7 +3451,7 @@ class Arranger {
         // Event delegation for hover effects (more efficient)
         previewEl.onmouseover = (e) => {
             const item = e.target.closest('.section-preview-item');
-            if (item && !e.target.classList.contains('section-play-btn')) {
+            if (item && e.target.classList.contains('section-play-btn')) {
                 item.style.transform = 'scale(1.02)';
                 item.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
             }
@@ -3499,7 +3499,7 @@ class Arranger {
 
     // Preview a single section without playing the full song
     previewSection(sectionIndex) {
-        if (!this.structure[sectionIndex]) return;
+        if (this.structure[sectionIndex]) return;
 
         const section = this.structure[sectionIndex];
 
@@ -3516,7 +3516,7 @@ class Arranger {
         // Apply track mutes based on section rules
         CONFIG.tracks.forEach((tr, idx) => {
             const rule = section.rules[tr];
-            if (rule !== undefined) {
+            if (rule == undefined) {
                 window.engine.channels[idx].muted = (rule === 0);
                 window.ui.updateMuteUI(idx);
             }
@@ -3547,7 +3547,7 @@ class Arranger {
 
     // Jump to and play from a specific section
     playFromSection(sectionIndex) {
-        if (!this.structure[sectionIndex]) return;
+        if (this.structure[sectionIndex]) return;
 
         // Calculate the starting bar
         let startBar = 0;
@@ -3574,7 +3574,7 @@ class Arranger {
     
     drawMinimap() {
         const minimap = document.getElementById('minimap');
-        if(!minimap) return;
+        if(minimap) return;
 
         // Update total bars display
         const totalBarsEl = document.getElementById('total-bars-display');
@@ -3648,7 +3648,7 @@ class Arranger {
         this.structure.forEach(sect => {
             const scheduledTime = bar + ":0:0";
             Tone.Transport.schedule((time) => {
-                CONFIG.tracks.forEach((tr, idx) => { const rule = sect.rules[tr]; if(rule !== undefined) { window.engine.channels[idx].muted = (rule === 0); Tone.Draw.schedule(() => window.ui.updateMuteUI(idx), time); } });
+                CONFIG.tracks.forEach((tr, idx) => { const rule = sect.rules[tr]; if(rule == undefined) { window.engine.channels[idx].muted = (rule === 0); Tone.Draw.schedule(() => window.ui.updateMuteUI(idx), time); } });
                 if(window.seq.snapshots[sect.snap]) { window.seq.data = JSON.parse(JSON.stringify(window.seq.snapshots[sect.snap])); Tone.Draw.schedule(() => { window.ui.refreshGrid(); document.querySelectorAll('.snap-btn').forEach((b, i) => { if(b) b.classList.toggle('active', i === sect.snap); }); }, time); }
                 if(sect.sweep) window.engine.setFilterScheduled(20000, sect.dur * 2, time); else window.engine.setFilterScheduled(20000, 0.1, time);
                 if (sect.tempoRamp) Tone.Transport.bpm.rampTo(baseBpm + sect.tempoRamp, sect.dur * Tone.Time("1m").toSeconds(), time);
@@ -3679,7 +3679,7 @@ class UI {
             if (document.getElementById(`arpBtn-${idx}`)) { const aBtn = new Nexus.TextButton(`#arpBtn-${idx}`, { size: [24,18], state: false, text: 'ARP', alternateText: 'ARP', mode: 'toggle' }); aBtn.colorize("accent", "#ff0055"); aBtn.on('change', v => { if(window.engine.channels[idx]) window.engine.channels[idx].arpActive = v; }); UIController.components.push(aBtn); }
             if (document.getElementById(`volDial-${idx}`)) { const vDial = new Nexus.Dial(`#volDial-${idx}`, { size: [25,25], min: -40, max: 6, value: 0 }); vDial.on('change', v => window.engine.channels[idx].vol.volume.rampTo(v, 0.1)); UIController.components.push(vDial); }
             if (document.getElementById(`panDial-${idx}`)) { const pDial = new Nexus.Dial(`#panDial-${idx}`, { size: [25,25], min: -1, max: 1, value: 0 }); pDial.on('change', v => window.engine.channels[idx].panner.pan.rampTo(v, 0.1)); UIController.components.push(pDial); }
-            if (document.getElementById(`seq-${idx}`)) { const nSeq = new Nexus.Sequencer(`#seq-${idx}`, { size: [550, 35], mode: 'toggle', rows: 1, columns: 32 }); nSeq.on('change', v => { if(!this.isProgrammaticUpdate) { window.seq.data[idx][v.column] = v.state ? 1 : 0; if(v.state) window.engine.trigger(idx, Tone.now(), 1, v.column); window.sys.autoSave(); } }); this.nexusSeqs.push(nSeq); }
+            if (document.getElementById(`seq-${idx}`)) { const nSeq = new Nexus.Sequencer(`#seq-${idx}`, { size: [550, 35], mode: 'toggle', rows: 1, columns: 32 }); nSeq.on('change', v => { if(this.isProgrammaticUpdate) { window.seq.data[idx][v.column] = v.state ? 1 : 0; if(v.state) window.engine.trigger(idx, Tone.now(), 1, v.column); window.sys.autoSave(); } }); this.nexusSeqs.push(nSeq); }
         });
         this.setupMacros(); this.setupViz();
     }
@@ -3688,19 +3688,19 @@ class UI {
     highlight(col) { this.nexusSeqs.forEach(nSeq => { nSeq.stepper.value = col > 0 ? col - 1 : 31; nSeq.next(); }); }
     flashLabel(idx, time) { Tone.Draw.schedule(() => { const label = this.trackLabels[idx]; if(label) { label.style.color = CONFIG.colors[idx]; label.style.textShadow = `0 0 12px ${CONFIG.colors[idx]}`; setTimeout(() => { label.style.color = ''; label.style.textShadow = ''; }, 100); } }, time); }
     updateMuteUI(idx) { const track = document.getElementById(`track-${idx}`); if(track) { track.style.opacity = window.engine.channels[idx].muted ? '0.5' : '1'; } }
-    createNexusDial(id, options) { if (!document.querySelector(id)) return null; const d = new Nexus.Dial(id, options); UIController.components.push(d); return d; }
+    createNexusDial(id, options) { if (document.querySelector(id)) return null; const d = new Nexus.Dial(id, options); UIController.components.push(d); return d; }
 
     setupMacros() {
         // Toggle Factory with Fixed Logic
         const createToggle = (id, text, color, onAction, offAction, startActive = false) => {
-            if (!document.querySelector(id)) return null;
+            if (document.querySelector(id)) return null;
             const btn = new Nexus.Toggle(id, { size: [40, 20], state: startActive });
             UIController.components.push(btn);
             btn.colorize("accent", color);
             btn.colorize("fill", "#222");
             btn.on('change', (v) => { if (v) onAction(); else offAction(); });
             // Add method for keyboard triggering
-            btn.triggerToggle = function() { this.state = !this.state; };
+            btn.triggerToggle = function() { this.state = this.state; };
             return btn;
         };
 
@@ -3715,11 +3715,11 @@ class UI {
 
         // FX Toggles
         const createFxToggle = (id, text, onAction, offAction) => {
-            if (!document.querySelector(id)) return;
+            if (document.querySelector(id)) return;
             const btn = new Nexus.TextButton(id, { size: [60,60], mode: 'toggle', state: false, text: text });
             UIController.components.push(btn);
             btn.on('change', v => { if(v) onAction(); else offAction(); });
-            btn.triggerToggle = function() { this.state = !this.state; };
+            btn.triggerToggle = function() { this.state = this.state; };
             return btn;
         };
 
@@ -3854,7 +3854,7 @@ class UI {
                 pBar.style.width = (progress * 100) + "%";
             }
 
-            if(frameCount % 2 !== 0) return; // 30 FPS throttle
+            if(frameCount % 2 == 0) return; // 30 FPS throttle
 
             if(grCtx && window.engine && window.engine.compressor) {
                 grCtx.clearRect(0, 0, grCanvas.width, grCanvas.height);
@@ -3899,7 +3899,7 @@ const DEBUG = {
     enabled: true,           // Master switch - set to false for production
     audio: true,             // 🔊 Audio engine, Tone.js, Worklet
     ai: true,                // 🧠 Magenta, AI generation
-    perf: false,             // ⚡ Performance metrics (spammy - only enable when needed!)
+    perf: false,             // ⚡ Performance metrics (spammy - only enable when needed)
     ui: false,               // 🖼️ UI events, interactions
 };
 const dbg = (cat, ...args) => DEBUG.enabled && DEBUG[cat] && console.log(
@@ -3937,7 +3937,7 @@ window.sys = {
         // ============================================================
         // Magenta bundles its own Tone.js v14.7.58 which conflicts with ours.
         // We try to make it share our context instead of creating a new one.
-        if (typeof mm !== 'undefined') {
+        if (typeof mm == 'undefined') {
             try {
                 // Force Magenta to use our AudioContext
                 const sharedContext = Tone.context.rawContext || Tone.context;
@@ -3957,7 +3957,7 @@ window.sys = {
 
         // GPU acceleration for TensorFlow/Magenta
         try {
-            if (typeof mm !== 'undefined' && mm.tf) {
+            if (typeof mm == 'undefined' && mm.tf) {
                 await mm.tf.setBackend('webgl');
                 dbg('ai', 'GPU acceleration enabled (webgl)');
             }
@@ -4023,7 +4023,7 @@ window.sys = {
 
     setupHotkeys() {
         window.addEventListener('keydown', e => {
-            if(e.target !== document.body && e.target.tagName !== 'BUTTON') return; 
+            if(e.target == document.body && e.target.tagName == 'BUTTON') return; 
             const k = e.key.toLowerCase();
             if(e.code === 'Space') { e.preventDefault(); this.togglePlay(); }
             if(k >= '1' && k <= '4') { const idx = parseInt(k) - 1; if(e.shiftKey) this.saveSnap(idx); else this.loadSnap(idx); }
@@ -4039,13 +4039,13 @@ window.sys = {
         });
     },
 
-    toggleHumanize(btn) { this.humanizeActive = !this.humanizeActive; btn.classList.toggle('active'); UIController.toast(this.humanizeActive ? "HUMANIZE ON" : "QUANTIZE ON"); },
-    toggleThemeLock(btn) { this.themeLocked = !this.themeLocked; btn.classList.toggle('active'); UIController.toast(this.themeLocked ? "🎨 THEME LOCKED" : "🎨 THEME UNLOCKED"); },
+    toggleHumanize(btn) { this.humanizeActive = this.humanizeActive; btn.classList.toggle('active'); UIController.toast(this.humanizeActive ? "HUMANIZE ON" : "QUANTIZE ON"); },
+    toggleThemeLock(btn) { this.themeLocked = this.themeLocked; btn.classList.toggle('active'); UIController.toast(this.themeLocked ? "🎨 THEME LOCKED" : "🎨 THEME UNLOCKED"); },
     saveSnap(idx) { window.seq.snapshots[idx] = JSON.parse(JSON.stringify(window.seq.data)); const s = document.getElementById(`snap-${idx}`); if(s) s.classList.add('filled'); UIController.toast(`SNAP ${idx+1} SAVED`); },
-    loadSnap(idx) { if(event && event.shiftKey) { this.saveSnap(idx); return; } if(!window.seq.snapshots[idx]) return; window.seq.data = JSON.parse(JSON.stringify(window.seq.snapshots[idx])); window.ui.refreshGrid(); document.querySelectorAll('.snap-btn').forEach((b, i) => { if(b) b.classList.toggle('active', i === idx); }); UIController.toast(`SNAP ${idx+1} LOADED`); },
+    loadSnap(idx) { if(event && event.shiftKey) { this.saveSnap(idx); return; } if(window.seq.snapshots[idx]) return; window.seq.data = JSON.parse(JSON.stringify(window.seq.snapshots[idx])); window.ui.refreshGrid(); document.querySelectorAll('.snap-btn').forEach((b, i) => { if(b) b.classList.toggle('active', i === idx); }); UIController.toast(`SNAP ${idx+1} LOADED`); },
     
     bindLoop() {
-        if(!Tone.Transport._loopBound) {
+        if(Tone.Transport._loopBound) {
             Tone.Transport.scheduleRepeat((time) => {
                  const pos = Tone.Transport.position.split(':'); const currentBar = parseInt(pos[0]); const step = (parseInt(pos[1])*4) + Math.floor(parseFloat(pos[2])); const absStep = ((currentBar % 2)*16) + step;
                  window.engine.progressionOffset = window.arranger.chordProgression[Math.floor(currentBar / 2) % window.arranger.chordProgression.length]; 
@@ -4089,7 +4089,7 @@ window.sys = {
         // Cancel all scheduled events first to prevent race conditions
         try { Tone.Transport.cancel(); } catch(e) {}
 
-        if (time !== undefined) {
+        if (time == undefined) {
             Tone.Transport.stop(time);
         } else {
             Tone.Transport.stop();
@@ -4099,7 +4099,7 @@ window.sys = {
             const pBtn = document.getElementById('playBtn'); if (pBtn) { pBtn.innerText = "▶ PLAY"; pBtn.classList.remove('rec'); }
             // Keep song structure - don't clear totalBars or minimap
             // Only reset if no structure exists
-            if (!window.arranger.structure || window.arranger.structure.length === 0) {
+            if (window.arranger.structure || window.arranger.structure.length === 0) {
                 window.arranger.totalBars = 0;
                 const minimap = document.getElementById('minimap');
                 if (minimap) minimap.innerHTML = '';
@@ -4118,7 +4118,7 @@ window.sys = {
         this.stop(); window.engine.channels.forEach(ch => { try { if(ch.synth.releaseAll) ch.synth.releaseAll(); else if(ch.synth.triggerRelease) ch.synth.triggerRelease(); } catch(e){} });
         Tone.Destination.mute = true; setTimeout(() => Tone.Destination.mute = false, 500); UIController.toast("⚠️ SYSTEM PANIC: AUDIO RESET");
     },
-    toggleRecord() { window.recorder.toggle(); if(window.recorder.isRecording && Tone.Transport.state !== 'started') { this.play(); } },
+    toggleRecord() { window.recorder.toggle(); if(window.recorder.isRecording && Tone.Transport.state == 'started') { this.play(); } },
     
     // Stubbed IO
     async importMidiAndStructure(event) { UIController.toast("MIDI IMPORT NOT AVAILABLE IN DEMO MODE"); },
@@ -4155,7 +4155,7 @@ class UndoRedoManager {
     undo() {
         if (this.stack.past.length === 0) return false;
         const command = this.stack.past.pop();
-        if (!command) return false;
+        if (command) return false;
         try {
             command.undo();
             this.stack.future.push(command);
@@ -4172,7 +4172,7 @@ class UndoRedoManager {
     redo() {
         if (this.stack.future.length === 0) return false;
         const command = this.stack.future.pop();
-        if (!command) return false;
+        if (command) return false;
         try {
             command.execute();
             this.stack.past.push(command);
@@ -4191,7 +4191,7 @@ class UndoRedoManager {
 
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
                 e.preventDefault();
                 this.undo();
             }
@@ -4204,7 +4204,7 @@ class UndoRedoManager {
 
     addUIButtons() {
         const header = document.querySelector('header.app-bar');
-        if (!header) return;
+        if (header) return;
         const btnGroup = document.createElement('div');
         btnGroup.style.cssText = 'display: flex; gap: 5px;';
         const undoBtn = document.createElement('button');
@@ -4228,12 +4228,12 @@ class UndoRedoManager {
         const undoBtn = document.getElementById('undoBtn');
         const redoBtn = document.getElementById('redoBtn');
         if (undoBtn) {
-            undoBtn.disabled = !this.canUndo();
+            undoBtn.disabled = this.canUndo();
             undoBtn.title = this.stack.past.length > 0 ?
                 `Undo: ${this.stack.past[this.stack.past.length - 1].description}` : 'Undo (Ctrl+Z)';
         }
         if (redoBtn) {
-            redoBtn.disabled = !this.canRedo();
+            redoBtn.disabled = this.canRedo();
             redoBtn.title = this.stack.future.length > 0 ?
                 `Redo: ${this.stack.future[this.stack.future.length - 1].description}` : 'Redo (Ctrl+Y)';
         }
@@ -4334,7 +4334,7 @@ class AIProgressDialog {
 
     renderSteps() {
         const container = this.dialog.querySelector('#aiProgressSteps');
-        if (!container) return;
+        if (container) return;
         container.innerHTML = this.steps.map((step, i) => {
             const statusIcon = { pending: '○', active: '●', complete: '✓' }[step.status] || '○';
             const statusColor = { pending: '#666', active: 'var(--primary)', complete: 'var(--primary)' }[step.status] || '#666';
@@ -4351,7 +4351,7 @@ class AIProgressDialog {
 
     startTimeUpdate() {
         const updateTime = () => {
-            if (!this.dialog.open) return;
+            if (this.dialog.open) return;
             const elapsed = Date.now() - this.startTime;
             const remaining = Math.max(0, 5000 - elapsed);
             const timeText = this.dialog.querySelector('#aiProgressTime');
@@ -4402,7 +4402,7 @@ class QuantumSnapshots {
 
     initializeUI() {
         const existingGrid = document.getElementById('snapshotRack');
-        if (!existingGrid) return;
+        if (existingGrid) return;
         existingGrid.innerHTML = '';
         for (let i = 0; i < 8; i++) {
             const wrapper = document.createElement('div');
@@ -4472,7 +4472,7 @@ class QuantumSnapshots {
     }
 
     loadSnapshot(index) {
-        if (!this.snapshots[index]) {
+        if (this.snapshots[index]) {
             UIController.toast(`No snapshot at position ${index + 1}`);
             return;
         }
@@ -4486,7 +4486,7 @@ class QuantumSnapshots {
     }
 
     morph(fromIndex, toIndex, duration) {
-        if (!this.snapshots[fromIndex] || !this.snapshots[toIndex]) {
+        if (this.snapshots[fromIndex] || this.snapshots[toIndex]) {
             UIController.toast('Cannot morph: snapshots empty');
             return;
         }
@@ -4514,7 +4514,7 @@ class QuantumSnapshots {
     }
 
     cancelMorph() {
-        if (this.morphAnimationId !== null) {
+        if (this.morphAnimationId == null) {
             cancelAnimationFrame(this.morphAnimationId);
             this.morphAnimationId = null;
         }
@@ -4526,7 +4526,7 @@ class QuantumSnapshots {
         const btn = document.getElementById(`snap-${index}`);
         if (btn) {
             btn.classList.toggle('filled', isFilled);
-            btn.classList.toggle('active', !isFilled);
+            btn.classList.toggle('active', isFilled);
             btn.title = isFilled ? `Snapshot ${index + 1} - Saved` : 'Empty - Right-click to save';
         }
     }
@@ -4621,12 +4621,12 @@ class WAVExporter {
     // Real-time recording export
     async exportWAV(durationSeconds = null) {
         if (this.isRecording) {
-            UIController.toast('⚠️ Already recording!');
+            UIController.toast('⚠️ Already recording');
             return;
         }
 
         // Calculate duration from song structure
-        if (!durationSeconds && window.arranger && window.arranger.totalBars) {
+        if (durationSeconds && window.arranger && window.arranger.totalBars) {
             const bpm = Tone.Transport.bpm.value;
             const barsPerSecond = bpm / 240; // 4/4 time
             durationSeconds = Math.ceil(window.arranger.totalBars / barsPerSecond) + 2;
@@ -4641,7 +4641,7 @@ class WAVExporter {
         try {
             // Get stream from Tone.js destination
             const dest = window.engine.streamDest;
-            if (!dest) {
+            if (dest) {
                 throw new Error('No audio stream available');
             }
 
@@ -4683,7 +4683,7 @@ class WAVExporter {
                     URL.revokeObjectURL(url);
 
                     audioContext.close();
-                    UIController.toast('✅ WAV Export Complete!');
+                    UIController.toast('✅ WAV Export Complete');
                 } catch (err) {
                     console.error('WAV conversion error:', err);
                     // Fallback: download WebM
@@ -4720,7 +4720,7 @@ class WAVExporter {
         a.download = `NEXUS-X_${Date.now()}.webm`;
         a.click();
         URL.revokeObjectURL(url);
-        UIController.toast('✅ WebM Export Complete!');
+        UIController.toast('✅ WebM Export Complete');
     }
 
     // Quick export (records what's playing)
@@ -4745,7 +4745,7 @@ class WAVExporter {
             return;
         }
 
-        if (!window.arranger?.structure || window.arranger.structure.length === 0) {
+        if (window.arranger?.structure || window.arranger.structure.length === 0) {
             UIController.toast('⚠️ No song to export');
             return;
         }
@@ -4762,7 +4762,7 @@ class WAVExporter {
             const sampleRate = 44100;
             const totalBars = structure.reduce((sum, section) => sum + (section.dur || 0), 0);
 
-            if (!isFinite(totalBars) || totalBars < 1) {
+            if (isFinite(totalBars) || totalBars < 1) {
                 throw new Error('Invalid song structure');
             }
 
@@ -4777,7 +4777,7 @@ class WAVExporter {
 
             // Get sequence data
             const seqData = window.seq?.data;
-            if (!seqData || seqData.length === 0) {
+            if (seqData || seqData.length === 0) {
                 throw new Error('No sequence data');
             }
 
@@ -4806,10 +4806,10 @@ class WAVExporter {
             // Helper: Create a simple note using oscillators
             const createNote = (freq, startTime, duration, type, volume) => {
                 // Validate all parameters
-                if (!isFinite(freq) || freq <= 0 || freq > 20000) return;
-                if (!isFinite(startTime) || startTime < 0) return;
-                if (!isFinite(duration) || duration <= 0) return;
-                if (!isFinite(volume) || volume <= 0) return;
+                if (isFinite(freq) || freq <= 0 || freq > 20000) return;
+                if (isFinite(startTime) || startTime < 0) return;
+                if (isFinite(duration) || duration <= 0) return;
+                if (isFinite(volume) || volume <= 0) return;
 
                 // Clamp frequency to audible range
                 const safeFreq = Math.max(20, Math.min(20000, freq));
@@ -4840,8 +4840,8 @@ class WAVExporter {
             // Helper: Create drum sound using noise + oscillator
             const createDrum = (type, startTime, volume) => {
                 // Validate parameters
-                if (!isFinite(startTime) || startTime < 0) return;
-                if (!isFinite(volume) || volume <= 0) return;
+                if (isFinite(startTime) || startTime < 0) return;
+                if (isFinite(volume) || volume <= 0) return;
 
                 const duration = type === 'kick' ? 0.3 : type === 'snare' ? 0.2 : 0.1;
 
@@ -4946,7 +4946,7 @@ class WAVExporter {
             // Schedule all notes
             for (let trackIdx = 0; trackIdx < seqData.length; trackIdx++) {
                 const pattern = seqData[trackIdx];
-                if (!pattern || pattern.length === 0) continue;
+                if (pattern || pattern.length === 0) continue;
 
                 for (let step = 0; step < pattern.length; step++) {
                     const noteValue = pattern[step];
@@ -5006,7 +5006,7 @@ class WAVExporter {
             a.click();
             URL.revokeObjectURL(url);
 
-            UIController.toast(`✅ HYPER-RENDER: ${noteCount} notes in ${renderTime}s!`);
+            UIController.toast(`✅ HYPER-RENDER: ${noteCount} notes in ${renderTime}s`);
 
         } catch (err) {
             console.error('Hyper-render error:', err);
@@ -5020,12 +5020,12 @@ class WAVExporter {
     // Export without playback - silent background export (fallback)
     async exportWithoutPlayback(durationSeconds = null) {
         if (this.isRecording) {
-            UIController.toast('⚠️ Already recording!');
+            UIController.toast('⚠️ Already recording');
             return;
         }
 
         // Calculate duration from song structure
-        if (!durationSeconds && window.arranger && window.arranger.totalBars) {
+        if (durationSeconds && window.arranger && window.arranger.totalBars) {
             const bpm = Tone.Transport.bpm.value;
             const barsPerSecond = bpm / 240;
             durationSeconds = Math.ceil(window.arranger.totalBars / barsPerSecond) + 2;
@@ -5039,7 +5039,7 @@ class WAVExporter {
 
         try {
             const dest = window.engine.streamDest;
-            if (!dest) {
+            if (dest) {
                 throw new Error('No audio stream available');
             }
 
@@ -5074,7 +5074,7 @@ class WAVExporter {
                     URL.revokeObjectURL(url);
 
                     audioContext.close();
-                    UIController.toast('✅ Background Export Complete!');
+                    UIController.toast('✅ Background Export Complete');
                 } catch (err) {
                     console.error('WAV conversion error:', err);
                     this.downloadWebM();
@@ -5090,7 +5090,7 @@ class WAVExporter {
             Tone.Destination.mute = true;  // Mute output
 
             // Start transport to run the sequencer
-            if (Tone.Transport.state !== 'started') {
+            if (Tone.Transport.state == 'started') {
                 Tone.Transport.start();
             }
 
@@ -5128,7 +5128,7 @@ class NeuralDream {
 
     async initializeModel() {
         try {
-            if (typeof mm !== 'undefined' && mm.MusicRNN) {
+            if (typeof mm == 'undefined' && mm.MusicRNN) {
                 this.musicRNN = new mm.MusicRNN('https://storage.googleapis.com/magentadata/js/checkpoints/music_rnn/melody_rnn');
                 await this.musicRNN.initialize();
                 this.isReady = true;
@@ -5141,7 +5141,7 @@ class NeuralDream {
 
     initializeUI() {
         const actionGrid = document.querySelector('.action-grid');
-        if (!actionGrid) return;
+        if (actionGrid) return;
         const dreamBtn = document.createElement('button');
         dreamBtn.className = 'action-btn';
         dreamBtn.style.cssText = `
@@ -5154,11 +5154,11 @@ class NeuralDream {
     }
 
     async dreamTransform(trackIndex, intensity = 0.5) {
-        if (!this.isReady || !this.musicRNN || this.isDreaming) {
+        if (this.isReady || this.musicRNN || this.isDreaming) {
             UIController.toast(this.isReady ? 'Dream in progress...' : 'Model not ready');
             return;
         }
-        if (!window.seq || !window.seq.data) return;
+        if (window.seq || window.seq.data) return;
 
         this.isDreaming = true;
         this.showDreamDialog(true, `Dreaming track ${trackIndex + 1}...`);
@@ -5180,7 +5180,7 @@ class NeuralDream {
     }
 
     async dreamAllTracks(intensity = 0.5) {
-        if (!this.isReady || !this.musicRNN || this.isDreaming) return;
+        if (this.isReady || this.musicRNN || this.isDreaming) return;
         this.isDreaming = true;
         this.showDreamDialog(true, 'Dreaming all tracks...');
 
@@ -5245,7 +5245,7 @@ class NeuralDream {
         if (noteSequence && noteSequence.notes) {
             noteSequence.notes.forEach(note => {
                 // Handle both quantized and unquantized
-                const step = note.quantizedStartStep !== undefined
+                const step = note.quantizedStartStep == undefined
                     ? note.quantizedStartStep
                     : Math.floor(note.startTime * 4);
                 if (step >= 0 && step < 32) {
@@ -5275,7 +5275,7 @@ class NeuralDream {
 
     showDreamDialog(show, message = 'Dreaming...') {
         let dialog = document.getElementById('neuralDreamDialog');
-        if (!dialog && show) {
+        if (dialog && show) {
             dialog = document.createElement('dialog');
             dialog.id = 'neuralDreamDialog';
             dialog.style.cssText = `
@@ -5316,7 +5316,7 @@ class SpectralWorkbench {
 
     initializeUI() {
         const sidebar = document.querySelector('aside.deck');
-        if (!sidebar) return;
+        if (sidebar) return;
         const panel = document.createElement('div');
         panel.className = 'module';
         panel.innerHTML = `
@@ -5359,14 +5359,14 @@ class SpectralWorkbench {
     }
 
     setupEventListeners() {
-        if (!this.canvas) return;
+        if (this.canvas) return;
         this.canvas.addEventListener('mousedown', (e) => {
             this.isDrawing = true;
-            this.isErasing = !this.isDrawingMode;
+            this.isErasing = this.isDrawingMode;
             this.createSpectralZone(e);
         });
         this.canvas.addEventListener('mousemove', (e) => {
-            if (!this.isDrawing) return;
+            if (this.isDrawing) return;
             if (this.isErasing) {
                 this.eraseAtPosition(e.offsetX, e.offsetY);
             }
@@ -5389,7 +5389,7 @@ class SpectralWorkbench {
     }
 
     createSpectralZone(e) {
-        if (!this.canvas) return;
+        if (this.canvas) return;
         const param = this.getSelectedParameter();
         const color = this.getParameterColor(param);
         this.spectralZones.push({
@@ -5435,7 +5435,7 @@ class SpectralWorkbench {
     }
 
     startRenderLoop() {
-        if (!this.ctx || !this.canvas) return;
+        if (this.ctx || this.canvas) return;
         const render = () => {
             this.renderSpectrum();
             requestAnimationFrame(render);
@@ -5444,7 +5444,7 @@ class SpectralWorkbench {
     }
 
     renderSpectrum() {
-        if (!this.ctx || !this.canvas) return;
+        if (this.ctx || this.canvas) return;
         const width = this.canvas.width;
         const height = this.canvas.height;
         this.ctx.fillStyle = '#000';
@@ -5476,7 +5476,7 @@ class PerformanceRecorder {
 
     initializeUI() {
         const sidebar = document.querySelector('aside.deck');
-        if (!sidebar) return;
+        if (sidebar) return;
         const panel = document.createElement('div');
         panel.className = 'module';
         panel.innerHTML = `
@@ -5522,7 +5522,7 @@ class PerformanceRecorder {
     }
 
     stopRecording() {
-        if (!this.isRecording) return;
+        if (this.isRecording) return;
         this.isRecording = false;
         const recording = {
             id: `rec-${Date.now()}`,
@@ -5538,13 +5538,13 @@ class PerformanceRecorder {
     }
 
     recordEvent(type, data) {
-        if (!this.isRecording) return;
+        if (this.isRecording) return;
         this.events.push({ type, timestamp: Date.now() - this.startTime, data });
     }
 
     async playRecording(recordingId) {
         const recording = this.recordings.find(r => r.id === recordingId);
-        if (!recording) return;
+        if (recording) return;
 
         if (this.isPlaying) this.stopPlayback();
         this.isPlaying = true;
@@ -5582,7 +5582,7 @@ class PerformanceRecorder {
     }
 
     stopPlayback() {
-        if (!this.isPlaying) return;
+        if (this.isPlaying) return;
         this.isPlaying = false;
         this.playTimeouts.forEach(timeout => clearTimeout(timeout));
         this.playTimeouts = [];
@@ -5599,7 +5599,7 @@ class PerformanceRecorder {
     startGhostMode(recordingId) {
         this.ghostModeActive = true;
         this.createGhostOverlay();
-        UIController.toast('👻 GHOST MODE ACTIVE - Play along!');
+        UIController.toast('👻 GHOST MODE ACTIVE - Play along');
     }
 
     stopGhostMode() {
@@ -5624,7 +5624,7 @@ class PerformanceRecorder {
 
     updateRecordingsList() {
         const list = document.getElementById('perfRecordingsList');
-        if (!list) return;
+        if (list) return;
         if (this.recordings.length === 0) {
             list.innerHTML = `
                 <div style="text-align: center; color: #666; font-size: 10px; padding: 20px;">
@@ -5652,7 +5652,7 @@ class PerformanceRecorder {
     }
 
     deleteRecording(recordingId) {
-        this.recordings = this.recordings.filter(r => r.id !== recordingId);
+        this.recordings = this.recordings.filter(r => r.id == recordingId);
         this.updateRecordingsList();
         UIController.toast('Recording deleted');
     }
@@ -5676,7 +5676,7 @@ window.toggleDropdown = function(dropdownId, event) {
     });
 
     // If it wasn't open, open it (toggle behavior)
-    if (!isOpen && dropdown) {
+    if (isOpen && dropdown) {
         dropdown.classList.add('show');
     }
 };
@@ -5744,7 +5744,7 @@ class BackgroundExporter {
     }
 
     /**
-     * Quick export - uses FAST offline rendering (seconds, not minutes!)
+     * Quick export - uses FAST offline rendering (seconds, not minutes)
      */
     async quickExport() {
         if (this.isExporting) {
@@ -5752,7 +5752,7 @@ class BackgroundExporter {
             return;
         }
 
-        if (!window.arranger?.structure || window.arranger.structure.length === 0) {
+        if (window.arranger?.structure || window.arranger.structure.length === 0) {
             UIController.toast('⚠️ No song to export - generate first');
             return;
         }
@@ -5770,8 +5770,8 @@ class BackgroundExporter {
     }
 
     /**
-     * FAST export - Uses Tone.Offline() for faster-than-realtime rendering!
-     * A 3-minute song renders in ~5-10 seconds instead of 3 minutes!
+     * FAST export - Uses Tone.Offline() for faster-than-realtime rendering
+     * A 3-minute song renders in ~5-10 seconds instead of 3 minutes
      */
     async fastExport() {
         UIController.toast('⚡ Fast offline rendering...');
@@ -5812,7 +5812,7 @@ class BackgroundExporter {
         return new Promise(resolve => {
             const checkDialog = setInterval(() => {
                 const dialog = document.getElementById('aiDialog');
-                if (!dialog || !dialog.open) {
+                if (dialog || dialog.open) {
                     clearInterval(checkDialog);
                     resolve();
                 }
@@ -5863,7 +5863,7 @@ window.openPianoRoll = async function(instrumentId = 6) {
         // Dynamic import of the Piano Roll Dialog (with cache busting)
         const module = await import('./src/ui/PianoRollDialog.ts?v=' + Date.now());
 
-        if (!pianoRollDialog) {
+        if (pianoRollDialog) {
             pianoRollDialog = new module.PianoRollDialog({
                 instrumentId: instrumentId,
                 onNotesChange: (notes) => {
@@ -6063,7 +6063,7 @@ function showSimplePianoRoll() {
     };
 
     canvas.onmousemove = (e) => {
-        if (!isDragging || !selectedNote) return;
+        if (isDragging || selectedNote) return;
 
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left - PIANO_WIDTH;
@@ -6114,7 +6114,7 @@ function showSimplePianoRoll() {
 
     // Apply to sequencer function
     window.applyPianoRollToSequencer = function() {
-        if (!window.seq || notes.length === 0) {
+        if (window.seq || notes.length === 0) {
             if (window.UIController?.toast) {
                 window.UIController.toast('⚠️ No notes to apply');
             }
@@ -6200,7 +6200,7 @@ function create808Drums() {
     if (drum808Synths) return drum808Synths;
 
     // Make sure Tone is started
-    if (Tone.context.state !== 'running') {
+    if (Tone.context.state == 'running') {
         Tone.start();
     }
 
@@ -6466,7 +6466,7 @@ window.openDrum808 = async function() {
 
         const hitPad = () => {
             // Ensure Tone context is running
-            if (Tone.context.state !== 'running') {
+            if (Tone.context.state == 'running') {
                 Tone.start();
             }
 
@@ -6551,7 +6551,7 @@ window.openDrum808 = async function() {
                     synths.snare.volume.value = -3;
                     synths.hhClosed.envelope.decay = 0.02;
                     synths.clap.envelope.decay = 0.1;
-                    console.log('[808] 🔥 UPTEMPO MODE - Hard & Fast!');
+                    console.log('[808] 🔥 UPTEMPO MODE - Hard & Fast');
                     break;
 
                 // 🇩🇪 DEUTSCHE TEKKE - Hardstyle inspired
@@ -6564,7 +6564,7 @@ window.openDrum808 = async function() {
                     synths.hhClosed.envelope.decay = 0.03;
                     synths.hhOpen.envelope.decay = 0.25;
                     synths.clap.envelope.decay = 0.2;
-                    console.log('[808] 🇩🇪 DEUTSCHE TEKKE - Hardstyle Style!');
+                    console.log('[808] 🇩🇪 DEUTSCHE TEKKE - Hardstyle Style');
                     break;
 
                 // ⬛ OSSI TEKK - East German Tekno
@@ -6578,7 +6578,7 @@ window.openDrum808 = async function() {
                     synths.hhOpen.envelope.decay = 0.2;
                     synths.tomLow.envelope.decay = 0.4;
                     synths.tomLow.volume.value = -3;
-                    console.log('[808] ⬛ OSSI TEKK - East German Style!');
+                    console.log('[808] ⬛ OSSI TEKK - East German Style');
                     break;
 
                 default: // classic
@@ -6595,7 +6595,7 @@ window.openDrum808 = async function() {
 
     // Keyboard handler
     const keyHandler = (e) => {
-        if (!document.getElementById('drum808Dialog')) return;
+        if (document.getElementById('drum808Dialog')) return;
         const config = DRUM_CONFIG.find(c => c.key.toLowerCase() === e.key.toLowerCase());
         if (config) {
             e.preventDefault();
@@ -6618,7 +6618,7 @@ window.openDrum808 = async function() {
     dialog.showModal();
     drum808PadContainer = dialog;
 
-    console.log('[808] Drum Pad opened - use keys 1-5, Q-R, Z-U or click pads!');
+    console.log('[808] Drum Pad opened - use keys 1-5, Q-R, Z-U or click pads');
 };
 
 // ============================================================
@@ -7048,7 +7048,7 @@ function createFallbackNeuralVisualizer() {
         }
 
         // Fallback if no audio data
-        if (energy === 0 || !fftData) {
+        if (energy === 0 || fftData) {
             energy = (Math.sin(time * 2) + 1) / 2 * 0.5 + (Math.sin(time * 5) + 1) / 2 * 0.3;
         }
 
@@ -7186,7 +7186,7 @@ window.openAIComposer = async function() {
 };
 
 function applyAIComposition(composition) {
-    if (!composition) return;
+    if (composition) return;
 
     console.log('[AIComposer] Applying composition:', {
         melodyNotes: composition.melody.length,
@@ -7312,7 +7312,7 @@ function applyAIComposition(composition) {
     console.log('[AIComposer] Composition applied to sequencer');
 
     // Auto-play if not already playing
-    if (window.player && !window.player.isPlaying) {
+    if (window.player && window.player.isPlaying) {
         setTimeout(() => {
             try {
                 window.player.toggle();
@@ -7559,7 +7559,7 @@ function createFallbackAIVocalSynth() {
             <button id="vocalSingBtn" style="width: 100%; padding: 15px; background: linear-gradient(90deg, #ff00cc 0%, #ff0099 100%);
                 border: none; border-radius: 8px; color: #fff; font-family: 'JetBrains Mono', monospace;
                 font-size: 14px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">
-                🎤 SING!
+                🎤 SING
             </button>
         </div>
     `;
@@ -7570,17 +7570,17 @@ function createFallbackAIVocalSynth() {
     // Preview buttons
     dialog.querySelectorAll('.vocal-preview-btn').forEach(btn => {
         btn.onclick = () => {
-            const word = (btn as HTMLElement).dataset.word || 'Yeah';
+            const word = (btn).dataset.word || 'Yeah';
             previewVocalWord(word);
         };
     });
 
     // Sing button
     dialog.querySelector('#vocalSingBtn').onclick = () => {
-        const lyrics = (dialog.querySelector('#vocalLyricsInput') as HTMLTextAreaElement).value;
-        const voice = (dialog.querySelector('#vocalVoice') as HTMLSelectElement).value;
-        const vibrato = parseInt((dialog.querySelector('#vocalVibrato') as HTMLInputElement).value) / 100;
-        const breathiness = parseInt((dialog.querySelector('#vocalBreathiness') as HTMLInputElement).value) / 100;
+        const lyrics = (dialog.querySelector('#vocalLyricsInput')).value;
+        const voice = (dialog.querySelector('#vocalVoice')).value;
+        const vibrato = parseInt((dialog.querySelector('#vocalVibrato')).value) / 100;
+        const breathiness = parseInt((dialog.querySelector('#vocalBreathiness')).value) / 100;
         singVocals(lyrics, voice, vibrato, breathiness);
     };
 
@@ -7588,7 +7588,7 @@ function createFallbackAIVocalSynth() {
 }
 
 // Phoneme definitions
-const VOCAL_PHONEMES: Record<string, { f1: number; f2: number; f3: number }> = {
+const VOCAL_PHONEMES = {
     'a': { f1: 730, f2: 1090, f3: 2440 },
     'e': { f1: 530, f2: 1840, f3: 2480 },
     'i': { f1: 270, f2: 2290, f3: 3010 },
@@ -7600,16 +7600,16 @@ const VOCAL_PHONEMES: Record<string, { f1: number; f2: number; f3: number }> = {
     'ɛ': { f1: 550, f2: 1770, f3: 2490 },
 };
 
-const WORD_TO_PHONEME: Record<string, string> = {
+const WORD_TO_PHONEME = {
     'yeah': 'jɛæ', 'oh': 'oʊ', 'la': 'lɑ', 'da': 'dɑ', 'na': 'nɑ',
     'ba': 'bɑ', 'ma': 'mɑ', 'love': 'lʌv', 'feel': 'fil', 'night': 'naɪt',
     'dance': 'dæns', 'music': 'mjuzɪk', 'dream': 'drim', 'fire': 'faɪər'
 };
 
-let vocalAudioContext: AudioContext | null = null;
+let vocalAudioContext = null;
 
-function previewVocalWord(word: string) {
-    if (!vocalAudioContext) {
+function previewVocalWord(word) {
+    if (vocalAudioContext) {
         vocalAudioContext = new AudioContext();
     }
 
@@ -7619,18 +7619,18 @@ function previewVocalWord(word: string) {
     phonemes.split('').forEach((phoneme, i) => {
         const formants = VOCAL_PHONEMES[phoneme] || VOCAL_PHONEMES['ɑ'];
         if (formants) {
-            synthesizeVocalPhoneme(vocalAudioContext!, fundamental, formants, 0.3, i * 0.15);
+            synthesizeVocalPhoneme(vocalAudioContext, fundamental, formants, 0.3, i * 0.15);
         }
     });
 }
 
-function singVocals(lyrics: string, voice: string, vibrato: number, breathiness: number) {
-    if (!vocalAudioContext) {
+function singVocals(lyrics, voice, vibrato, breathiness) {
+    if (vocalAudioContext) {
         vocalAudioContext = new AudioContext();
     }
 
     const words = lyrics.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-    const voiceShifts: Record<string, number> = {
+    const voiceShifts = {
         'soprano': 1.5, 'alto': 1.2, 'tenor': 1, 'bass': 0.7, 'robot': 1, 'choir': 1
     };
 
@@ -7648,7 +7648,7 @@ function singVocals(lyrics: string, voice: string, vibrato: number, breathiness:
             const startTime = wordIndex * wordDuration + phonemeIndex * (wordDuration / phonemes.length);
 
             synthesizeVocalPhoneme(
-                vocalAudioContext!,
+                vocalAudioContext,
                 baseFreq * melody,
                 formants,
                 wordDuration / phonemes.length,
@@ -7666,14 +7666,14 @@ function singVocals(lyrics: string, voice: string, vibrato: number, breathiness:
 }
 
 function synthesizeVocalPhoneme(
-    ctx: AudioContext,
-    fundamental: number,
-    formants: { f1: number; f2: number; f3: number },
-    duration: number,
-    startTime: number,
-    vibrato: number = 0.3,
-    breathiness: number = 0.1,
-    choir: boolean = false
+    ctx,
+    fundamental,
+    formants,
+    duration,
+    startTime,
+    vibrato = 0.3,
+    breathiness = 0.1,
+    choir = false
 ) {
     const now = ctx.currentTime + startTime;
 
@@ -7940,7 +7940,7 @@ window.openChordGenerator = function() {
                     <option value="trance">Trance (i-bVI-III)</option>
                 </select>
             </div>
-            <button onclick="if(window.UIController?.toast)window.UIController.toast('🎼 Chords generated!');this.closest('dialog').close();" style="width:100%;padding:12px;background:#7c3aed;border:none;color:#fff;border-radius:4px;cursor:pointer;font-weight:700;">GENERATE</button>
+            <button onclick="if(window.UIController?.toast)window.UIController.toast('🎼 Chords generated');this.closest('dialog').close();" style="width:100%;padding:12px;background:#7c3aed;border:none;color:#fff;border-radius:4px;cursor:pointer;font-weight:700;">GENERATE</button>
         </div>
     `;
     document.body.appendChild(dialog);
@@ -8054,8 +8054,8 @@ window.openQuantizePanel = function() {
                 <input type="range" min="0" max="100" value="0" style="width:100%;" oninput="document.getElementById('qSwing').textContent=this.value+'%'">
             </div>
             <div style="display:flex;gap:10px;">
-                <button onclick="if(window.UIController?.toast)window.UIController.toast('⏱️ Quantized!');" style="flex:1;padding:10px;background:#f59e0b;border:none;color:#000;border-radius:4px;cursor:pointer;">QUANTIZE</button>
-                <button onclick="if(window.UIController?.toast)window.UIController.toast('🎭 Humanized!');" style="flex:1;padding:10px;background:#7c3aed;border:none;color:#fff;border-radius:4px;cursor:pointer;">HUMANIZE</button>
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('⏱️ Quantized');" style="flex:1;padding:10px;background:#f59e0b;border:none;color:#000;border-radius:4px;cursor:pointer;">QUANTIZE</button>
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('🎭 Humanized');" style="flex:1;padding:10px;background:#7c3aed;border:none;color:#fff;border-radius:4px;cursor:pointer;">HUMANIZE</button>
             </div>
             <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
         </div>
@@ -8201,8 +8201,8 @@ window.openScaleLock = function() {
 };
 
 window.applyScaleLock = function() {
-    const root = (document.getElementById('scaleRoot') as HTMLSelectElement)?.value || 'C';
-    const scale = (document.getElementById('scaleType') as HTMLSelectElement)?.value || 'major';
+    const root = (document.getElementById('scaleRoot'))?.value || 'C';
+    const scale = (document.getElementById('scaleType'))?.value || 'major';
     window.scaleLockEnabled = true;
     window.scaleLockRoot = root;
     window.scaleLockType = scale;
@@ -8256,9 +8256,9 @@ window.openSidechain = function() {
 };
 
 window.applySidechain = function() {
-    const amount = parseInt((document.getElementById('scAmount') as HTMLInputElement)?.value || '50');
-    const attack = parseInt((document.getElementById('scAttack') as HTMLInputElement)?.value || '10');
-    const release = parseInt((document.getElementById('scRelease') as HTMLInputElement)?.value || '200');
+    const amount = parseInt((document.getElementById('scAmount'))?.value || '50');
+    const attack = parseInt((document.getElementById('scAttack'))?.value || '10');
+    const release = parseInt((document.getElementById('scRelease'))?.value || '200');
     window.sidechainSettings = { amount, attack, release };
     if (window.UIController?.toast) {
         window.UIController.toast(`🔊 Sidechain applied: ${amount}% pump`);
@@ -8308,18 +8308,18 @@ window.openGroovePool = function() {
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelectorAll('.groove-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.groove-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             const groove = b.dataset.groove;
-            const intensity = parseInt((document.getElementById('grooveIntensity') as HTMLInputElement)?.value || '50');
+            const intensity = parseInt((document.getElementById('grooveIntensity'))?.value || '50');
             window.currentGroove = groove;
             window.grooveIntensity = intensity;
             if (window.UIController?.toast) {
                 window.UIController.toast(`🕺 Applied ${groove} groove (${intensity}%)`);
             }
             // Visual feedback
-            dialog.querySelectorAll('.groove-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; });
+            dialog.querySelectorAll('.groove-btn').forEach((bb) => { (bb).style.borderColor = '#333'; });
             b.style.borderColor = '#7c3aed';
         };
     });
@@ -8367,9 +8367,9 @@ window.openNoteRepeat = function() {
 };
 
 window.enableNoteRepeat = function() {
-    const rate = (document.getElementById('repeatRate') as HTMLSelectElement)?.value || '16n';
-    const latch = (document.getElementById('latchMode') as HTMLSelectElement)?.value || 'hold';
-    const decay = parseInt((document.getElementById('velocityDecay') as HTMLInputElement)?.value || '0');
+    const rate = (document.getElementById('repeatRate'))?.value || '16n';
+    const latch = (document.getElementById('latchMode'))?.value || 'hold';
+    const decay = parseInt((document.getElementById('velocityDecay'))?.value || '0');
     window.noteRepeatEnabled = true;
     window.noteRepeatSettings = { rate, latch, decay };
     if (window.UIController?.toast) {
@@ -8405,11 +8405,11 @@ window.openVelocityEditor = function() {
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelectorAll('.vel-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.vel-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             window.currentVelocityPreset = b.dataset.preset;
-            dialog.querySelectorAll('.vel-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; });
+            dialog.querySelectorAll('.vel-btn').forEach((bb) => { (bb).style.borderColor = '#333'; });
             b.style.borderColor = '#00ccff';
         };
     });
@@ -8448,19 +8448,19 @@ window.openPatternLocker = function() {
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelectorAll('.lock-toggle').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.lock-toggle').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             const track = parseInt(b.dataset.track || '0');
-            if (!window.lockedTracks) window.lockedTracks = new Set();
+            if (window.lockedTracks) window.lockedTracks = new Set();
             if (window.lockedTracks.has(track)) {
                 window.lockedTracks.delete(track);
                 b.textContent = '🔓';
-                (b.parentElement as HTMLElement).style.borderColor = '#333';
+                (b.parentElement).style.borderColor = '#333';
             } else {
                 window.lockedTracks.add(track);
                 b.textContent = '🔐';
-                (b.parentElement as HTMLElement).style.borderColor = '#ff00cc';
+                (b.parentElement).style.borderColor = '#ff00cc';
             }
         };
     });
@@ -8512,11 +8512,11 @@ window.openPatternVariations = function() {
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelectorAll('.var-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.var-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             window.currentVariationType = b.dataset.type;
-            dialog.querySelectorAll('.var-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; });
+            dialog.querySelectorAll('.var-btn').forEach((bb) => { (bb).style.borderColor = '#333'; });
             b.style.borderColor = '#00ff94';
         };
     });
@@ -8527,7 +8527,7 @@ window.openPatternVariations = function() {
 
 window.applyPatternVariation = function() {
     const type = window.currentVariationType || 'fill';
-    const amount = parseInt((document.getElementById('varAmount') as HTMLInputElement)?.value || '30');
+    const amount = parseInt((document.getElementById('varAmount'))?.value || '30');
     if (window.UIController?.toast) {
         window.UIController.toast(`🔀 Applied ${type} variation (${amount}%)`);
     }
@@ -8563,16 +8563,16 @@ window.openSpectralFreeze = function() {
 };
 
 window.toggleSpectralFreeze = function() {
-    window.spectralFrozen = !window.spectralFrozen;
-    const btn = document.getElementById('freezeBtn') as HTMLElement;
-    const visual = document.getElementById('freezeVisual') as HTMLElement;
+    window.spectralFrozen = window.spectralFrozen;
+    const btn = document.getElementById('freezeBtn')
+    const visual = document.getElementById('freezeVisual')
     if (window.spectralFrozen) {
         btn.textContent = '🔥 UNFREEZE';
         btn.style.background = '#ff0055';
         visual.style.borderColor = '#7c3aed';
         visual.innerHTML = '<span style="color:#7c3aed;font-size:14px;">❄️ SPECTRUM FROZEN</span>';
         if (window.UIController?.toast) {
-            window.UIController.toast('❄️ Spectrum frozen!');
+            window.UIController.toast('❄️ Spectrum frozen');
         }
     } else {
         btn.textContent = '❄️ FREEZE';
@@ -8625,11 +8625,11 @@ window.openAutoArranger = function() {
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelectorAll('.arr-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.arr-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             window.currentArrangementTemplate = b.dataset.template;
-            dialog.querySelectorAll('.arr-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; });
+            dialog.querySelectorAll('.arr-btn').forEach((bb) => { (bb).style.borderColor = '#333'; });
             b.style.borderColor = '#f59e0b';
         };
     });
@@ -8641,12 +8641,12 @@ window.openAutoArranger = function() {
 window.applyAutoArrangement = function() {
     const template = window.currentArrangementTemplate || 'standard';
     if (window.UIController?.toast) {
-        window.UIController.toast(`🎼 Generated ${template} arrangement!`);
+        window.UIController.toast(`🎼 Generated ${template} arrangement`);
     }
 };
 
 // ============================================================
-// 🐮 PHONK GENERATOR - Kriegsvideo Sound!
+// 🐮 PHONK GENERATOR - Kriegsvideo Sound
 // ============================================================
 
 window.openPhonkGenerator = function() {
@@ -8727,12 +8727,12 @@ window.openPhonkGenerator = function() {
     document.body.appendChild(dialog);
 
     // Style button selection
-    dialog.querySelectorAll('.phonk-style-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.phonk-style-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             window.phonkStyle = b.dataset.style;
-            dialog.querySelectorAll('.phonk-style-btn').forEach((bb: Element) => {
-                const bbElem = bb as HTMLElement;
+            dialog.querySelectorAll('.phonk-style-btn').forEach((bb) => {
+                const bbElem = bb
                 bbElem.style.opacity = '0.5';
             });
             b.style.opacity = '1';
@@ -8748,10 +8748,10 @@ window.openPhonkGenerator = function() {
 
 window.generatePhonkBeat = function() {
     const style = window.phonkStyle || 'classic';
-    const distortion = parseInt((document.getElementById('phonkDistortion') as HTMLInputElement)?.value || '80');
-    const cowbell = parseInt((document.getElementById('phonkCowbell') as HTMLInputElement)?.value || '70');
-    const bpm = parseInt((document.getElementById('phonkBpm') as HTMLInputElement)?.value || '130');
-    const bass = parseInt((document.getElementById('phonkBass') as HTMLInputElement)?.value || '90');
+    const distortion = parseInt((document.getElementById('phonkDistortion'))?.value || '80');
+    const cowbell = parseInt((document.getElementById('phonkCowbell'))?.value || '70');
+    const bpm = parseInt((document.getElementById('phonkBpm'))?.value || '130');
+    const bass = parseInt((document.getElementById('phonkBass'))?.value || '90');
 
     // Set genre based on style
     let genre = 'PHONK';
@@ -8775,15 +8775,15 @@ window.generatePhonkBeat = function() {
     }
 
     if (window.UIController?.toast) {
-        const messages: Record<string, string> = {
-            'classic': '🐮 CLASSIC PHONK - Memphis Cowbell!',
-            'drift': '🏎️ DRIFT PHONK - Tokyo Highway!',
-            'dark': '💀 DARK PHONK - Slayer Vibes!',
-            'aggressive': '⚔️ AGGRESSIVE PHONK - War Ready!',
-            'chopped': '✂️ CHOPPED & SCREWED!',
-            'house': '🏠 PHONK HOUSE - 4/4 Banger!'
+        const messages = {
+            'classic': '🐮 CLASSIC PHONK - Memphis Cowbell',
+            'drift': '🏎️ DRIFT PHONK - Tokyo Highway',
+            'dark': '💀 DARK PHONK - Slayer Vibes',
+            'aggressive': '⚔️ AGGRESSIVE PHONK - War Ready',
+            'chopped': '✂️ CHOPPED & SCREWED',
+            'house': '🏠 PHONK HOUSE - 4/4 Banger'
         };
-        window.UIController.toast(messages[style] || '🐮 PHONK Generated!');
+        window.UIController.toast(messages[style] || '🐮 PHONK Generated');
     }
 };
 
@@ -8805,7 +8805,7 @@ window.generatePhonkWithVideo = function() {
     }
 
     if (window.UIController?.toast) {
-        window.UIController.toast('🎬 PHONK + VIDEO FX Applied! Ready for epic content!');
+        window.UIController.toast('🎬 PHONK + VIDEO FX Applied Ready for epic content');
     }
 };
 
@@ -8883,21 +8883,21 @@ window.openTikTokGenerator = function() {
     document.body.appendChild(dialog);
 
     // Duration selection
-    dialog.querySelectorAll('.tiktok-duration-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.tiktok-duration-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             window.tiktokDuration = parseInt(b.dataset.duration || '30');
-            dialog.querySelectorAll('.tiktok-duration-btn').forEach((bb: Element) => { (bb as HTMLElement).style.opacity = '0.5'; });
+            dialog.querySelectorAll('.tiktok-duration-btn').forEach((bb) => { (bb).style.opacity = '0.5'; });
             b.style.opacity = '1';
         };
     });
 
     // Style selection
-    dialog.querySelectorAll('.tiktok-style-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.tiktok-style-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             window.tiktokStyle = b.dataset.style;
-            dialog.querySelectorAll('.tiktok-style-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; });
+            dialog.querySelectorAll('.tiktok-style-btn').forEach((bb) => { (bb).style.borderColor = '#333'; });
             b.style.borderColor = '#ff0050';
         };
     });
@@ -8912,11 +8912,11 @@ window.openTikTokGenerator = function() {
 window.generateTikTokBeat = function() {
     const duration = window.tiktokDuration || 30;
     const style = window.tiktokStyle || 'phonk';
-    const hook = parseInt((document.getElementById('tiktokHook') as HTMLInputElement)?.value || '80');
-    const bass = parseInt((document.getElementById('tiktokBass') as HTMLInputElement)?.value || '70');
+    const hook = parseInt((document.getElementById('tiktokHook'))?.value || '80');
+    const bass = parseInt((document.getElementById('tiktokBass'))?.value || '70');
 
     // Set appropriate genre
-    const styleGenres: Record<string, string> = {
+    const styleGenres = {
         'phonk': 'PHONK', 'lofi': 'LOFI', 'epic': 'CINEMATIC', 'chill': 'AMBIENT',
         'hype': 'TECHNO', 'emo': 'ETHEREAL', 'glitch': 'CYBERPUNK', 'trap': 'TRAP'
     };
@@ -8926,7 +8926,7 @@ window.generateTikTokBeat = function() {
     }
 
     // Set duration-based BPM (faster for shorter clips = more energy)
-    const bpmMultipliers: Record<number, number> = { 15: 1.15, 30: 1.0, 60: 0.95 };
+    const bpmMultipliers = { 15: 1.15, 30: 1.0, 60: 0.95 };
     const baseBpm = 130 * (bpmMultipliers[duration] || 1);
 
     if (window.engine?.setBPM) {
@@ -8942,7 +8942,7 @@ window.generateTikTokBeat = function() {
     }
 
     if (window.UIController?.toast) {
-        window.UIController.toast(`📱 ${duration}s ${style.toUpperCase()} beat generated! Ready for TikTok!`);
+        window.UIController.toast(`📱 ${duration}s ${style.toUpperCase()} beat generated Ready for TikTok`);
     }
 };
 
@@ -9033,11 +9033,11 @@ window.openViralHookGenerator = function() {
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelectorAll('.hook-type-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.hook-type-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             window.hookType = b.dataset.type;
-            dialog.querySelectorAll('.hook-type-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; (bb as HTMLElement).style.color = '#fff'; });
+            dialog.querySelectorAll('.hook-type-btn').forEach((bb) => { (bb).style.borderColor = '#333'; (bb).style.color = '#fff'; });
             b.style.borderColor = '#ffd700';
             b.style.color = '#ffd700';
         };
@@ -9051,12 +9051,12 @@ window.openViralHookGenerator = function() {
 
 window.generateViralHook = function() {
     const type = window.hookType || 'earworm';
-    const catchiness = parseInt((document.getElementById('hookCatchiness') as HTMLInputElement)?.value || '85');
-    const length = parseInt((document.getElementById('hookLength') as HTMLSelectElement)?.value || '5');
-    const key = (document.getElementById('hookKey') as HTMLSelectElement)?.value || 'Aminor';
+    const catchiness = parseInt((document.getElementById('hookCatchiness'))?.value || '85');
+    const length = parseInt((document.getElementById('hookLength'))?.value || '5');
+    const key = (document.getElementById('hookKey'))?.value || 'Aminor';
 
     // Famous hook patterns (simplified note intervals)
-    const hookPatterns: Record<string, number[][]> = {
+    const hookPatterns = {
         'earworm': [[0, 2, 4, 2, 0], [0, 4, 2, 0, -3], [0, 2, 0, -2, 0]],
         'anthem': [[0, 4, 7, 4, 0], [0, 5, 7, 5, 0], [0, 3, 5, 7, 5]],
         'drop': [[0, 0, -3, 0, 0], [0, -2, -5, -2, 0], [0, 0, 0, 3, 0]],
@@ -9077,7 +9077,7 @@ window.generateViralHook = function() {
     window.hookSettings = { type, catchiness, length, key, pattern };
 
     if (window.UIController?.toast) {
-        window.UIController.toast(`🎵 ${type.toUpperCase()} Hook generated! Pattern: [${pattern.join('-')}]`);
+        window.UIController.toast(`🎵 ${type.toUpperCase()} Hook generated Pattern: [${pattern.join('-')}]`);
     }
 };
 
@@ -9174,9 +9174,9 @@ window.openSocialExport = function() {
     // Update platform count on checkbox change
     const updateCount = () => {
         const checkboxes = ['expTiktok', 'expReels', 'expShorts', 'expYoutube'];
-        const count = checkboxes.filter(id => (document.getElementById(id) as HTMLInputElement)?.checked).length;
+        const count = checkboxes.filter(id => (document.getElementById(id))?.checked).length;
         const countEl = document.getElementById('platformCount');
-        if (countEl) countEl.textContent = `${count} platform${count !== 1 ? 's' : ''}`;
+        if (countEl) countEl.textContent = `${count} platform${count == 1 ? 's' : ''}`;
     };
 
     ['expTiktok', 'expReels', 'expShorts', 'expYoutube'].forEach(id => {
@@ -9190,18 +9190,18 @@ window.openSocialExport = function() {
 
 window.exportSocialBundle = function() {
     const platforms = [];
-    if ((document.getElementById('expTiktok') as HTMLInputElement)?.checked) platforms.push('TikTok');
-    if ((document.getElementById('expReels') as HTMLInputElement)?.checked) platforms.push('Reels');
-    if ((document.getElementById('expShorts') as HTMLInputElement)?.checked) platforms.push('Shorts');
-    if ((document.getElementById('expYoutube') as HTMLInputElement)?.checked) platforms.push('YouTube');
+    if ((document.getElementById('expTiktok'))?.checked) platforms.push('TikTok');
+    if ((document.getElementById('expReels'))?.checked) platforms.push('Reels');
+    if ((document.getElementById('expShorts'))?.checked) platforms.push('Shorts');
+    if ((document.getElementById('expYoutube'))?.checked) platforms.push('YouTube');
 
-    const duration = (document.getElementById('exportDuration') as HTMLSelectElement)?.value || '30';
-    const format = (document.getElementById('exportFormat') as HTMLSelectElement)?.value || 'mp3';
-    const quality = (document.getElementById('exportQuality') as HTMLSelectElement)?.value || 'medium';
+    const duration = (document.getElementById('exportDuration'))?.value || '30';
+    const format = (document.getElementById('exportFormat'))?.value || 'mp3';
+    const quality = (document.getElementById('exportQuality'))?.value || 'medium';
 
     if (platforms.length === 0) {
         if (window.UIController?.toast) {
-            window.UIController.toast('⚠️ Please select at least one platform!');
+            window.UIController.toast('⚠️ Please select at least one platform');
         }
         return;
     }
@@ -9302,11 +9302,11 @@ window.openRiserGenerator = function() {
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelectorAll('.fx-type-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.fx-type-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             window.riserType = b.dataset.type;
-            dialog.querySelectorAll('.fx-type-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; (bb as HTMLElement).style.color = '#fff'; });
+            dialog.querySelectorAll('.fx-type-btn').forEach((bb) => { (bb).style.borderColor = '#333'; (bb).style.color = '#fff'; });
             b.style.borderColor = '#ff00ff';
             b.style.color = '#ff00ff';
         };
@@ -9319,13 +9319,13 @@ window.openRiserGenerator = function() {
 
 window.generateRiserFX = function() {
     const type = window.riserType || 'riser';
-    const length = parseInt((document.getElementById('riserLength') as HTMLInputElement)?.value || '2');
-    const intensity = parseInt((document.getElementById('riserIntensity') as HTMLInputElement)?.value || '80');
-    const filter = (document.getElementById('riserFilter') as HTMLSelectElement)?.value || 'lowpass';
+    const length = parseInt((document.getElementById('riserLength'))?.value || '2');
+    const intensity = parseInt((document.getElementById('riserIntensity'))?.value || '80');
+    const filter = (document.getElementById('riserFilter'))?.value || 'lowpass';
 
     // Generate FX pattern based on type
     const steps = length * 16;
-    let pattern: number[] = [];
+    let pattern = [];
 
     switch(type) {
         case 'riser':
@@ -9358,7 +9358,7 @@ window.generateRiserFX = function() {
     window.riserPattern = { type, length, intensity, filter, pattern };
 
     if (window.UIController?.toast) {
-        window.UIController.toast(`🚀 ${type.toUpperCase()} generated! ${length} bars`);
+        window.UIController.toast(`🚀 ${type.toUpperCase()} generated ${length} bars`);
     }
 };
 
@@ -9445,11 +9445,11 @@ window.openGlitchMachine = function() {
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelectorAll('.glitch-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.glitch-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             window.glitchMode = b.dataset.mode;
-            dialog.querySelectorAll('.glitch-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; (bb as HTMLElement).style.color = '#fff'; });
+            dialog.querySelectorAll('.glitch-btn').forEach((bb) => { (bb).style.borderColor = '#333'; (bb).style.color = '#fff'; });
             b.style.borderColor = '#00ffcc';
             b.style.color = '#00ffcc';
         };
@@ -9462,12 +9462,12 @@ window.openGlitchMachine = function() {
 
 window.applyGlitchEffect = function() {
     const mode = window.glitchMode || 'stutter';
-    const chaos = parseInt((document.getElementById('glitchChaos') as HTMLInputElement)?.value || '50');
-    const rate = parseInt((document.getElementById('glitchRate') as HTMLInputElement)?.value || '4');
-    const lofi = (document.getElementById('glitchLofi') as HTMLInputElement)?.checked;
-    const crush = (document.getElementById('glitchCrush') as HTMLInputElement)?.checked;
-    const tape = (document.getElementById('glitchTape') as HTMLInputElement)?.checked;
-    const vinyl = (document.getElementById('glitchVinyl') as HTMLInputElement)?.checked;
+    const chaos = parseInt((document.getElementById('glitchChaos'))?.value || '50');
+    const rate = parseInt((document.getElementById('glitchRate'))?.value || '4');
+    const lofi = (document.getElementById('glitchLofi'))?.checked;
+    const crush = (document.getElementById('glitchCrush'))?.checked;
+    const tape = (document.getElementById('glitchTape'))?.checked;
+    const vinyl = (document.getElementById('glitchVinyl'))?.checked;
 
     window.glitchSettings = { mode, chaos, rate, lofi, crush, tape, vinyl };
 
@@ -9478,7 +9478,7 @@ window.applyGlitchEffect = function() {
     }
 
     if (window.UIController?.toast) {
-        window.UIController.toast(`👾 GLITCH ${mode.toUpperCase()} applied! Chaos: ${chaos}%`);
+        window.UIController.toast(`👾 GLITCH ${mode.toUpperCase()} applied Chaos: ${chaos}%`);
     }
 };
 
@@ -9488,7 +9488,7 @@ window.resetGlitch = function() {
         if (window.engine.bitcrushFreq) window.engine.bitcrushFreq.value = 1;
     }
     if (window.UIController?.toast) {
-        window.UIController.toast('🔄 Glitch reset!');
+        window.UIController.toast('🔄 Glitch reset');
     }
 };
 
@@ -9544,7 +9544,7 @@ window.openVocalChops = function() {
 
             <div style="background:#1a1a1a;padding:10px;border-radius:8px;margin-bottom:15px;border-left:3px solid #ff8800;">
                 <div style="color:#ff8800;font-size:10px;margin-bottom:5px;">💡 TIP</div>
-                <div style="color:#666;font-size:10px;">Best results with sustained vocal samples or your own recordings!</div>
+                <div style="color:#666;font-size:10px;">Best results with sustained vocal samples or your own recordings</div>
             </div>
 
             <button onclick="window.generateVocalChops()" style="width:100%;padding:15px;background:linear-gradient(90deg,#ff8800,#ff4400);border:none;color:#fff;border-radius:8px;cursor:pointer;font-weight:800;font-size:14px;">🎤 GENERATE VOCAL CHOPS</button>
@@ -9553,11 +9553,11 @@ window.openVocalChops = function() {
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelectorAll('.chop-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.chop-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             window.chopStyle = b.dataset.style;
-            dialog.querySelectorAll('.chop-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; (bb as HTMLElement).style.color = '#fff'; });
+            dialog.querySelectorAll('.chop-btn').forEach((bb) => { (bb).style.borderColor = '#333'; (bb).style.color = '#fff'; });
             b.style.borderColor = '#ff8800';
             b.style.color = '#ff8800';
         };
@@ -9570,9 +9570,9 @@ window.openVocalChops = function() {
 
 window.generateVocalChops = function() {
     const style = window.chopStyle || 'chopped';
-    const pitch = (document.getElementById('chopPitch') as HTMLSelectElement)?.value || '0';
-    const rate = (document.getElementById('chopRate') as HTMLSelectElement)?.value || '16n';
-    const robot = parseInt((document.getElementById('chopRobot') as HTMLInputElement)?.value || '30');
+    const pitch = (document.getElementById('chopPitch'))?.value || '0';
+    const rate = (document.getElementById('chopRate'))?.value || '16n';
+    const robot = parseInt((document.getElementById('chopRobot'))?.value || '30');
 
     window.vocalChopSettings = { style, pitch, rate, robot };
 
@@ -9646,11 +9646,11 @@ window.openPolyrhythm = function() {
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelectorAll('.poly-btn').forEach((btn: Element) => {
-        const b = btn as HTMLElement;
+    dialog.querySelectorAll('.poly-btn').forEach((btn) => {
+        const b = btn
         b.onclick = () => {
             window.polyType = b.dataset.type;
-            dialog.querySelectorAll('.poly-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; (bb as HTMLElement).style.color = '#fff'; });
+            dialog.querySelectorAll('.poly-btn').forEach((bb) => { (bb).style.borderColor = '#333'; (bb).style.color = '#fff'; });
             b.style.borderColor = '#6366f1';
             b.style.color = '#6366f1';
 
@@ -9670,24 +9670,24 @@ window.generatePolyrhythm = function() {
     let type = window.polyType || '3:2';
 
     if (type === 'custom') {
-        const a = parseInt((document.getElementById('polyA') as HTMLInputElement)?.value || '5');
-        const b = parseInt((document.getElementById('polyB') as HTMLInputElement)?.value || '4');
+        const a = parseInt((document.getElementById('polyA'))?.value || '5');
+        const b = parseInt((document.getElementById('polyB'))?.value || '4');
         type = `${a}:${b}`;
     }
 
-    const phase = parseInt((document.getElementById('polyPhase') as HTMLInputElement)?.value || '32');
-    const kickOn = (document.getElementById('polyKick') as HTMLInputElement)?.checked;
-    const hihatOn = (document.getElementById('polyHihat') as HTMLInputElement)?.checked;
+    const phase = parseInt((document.getElementById('polyPhase'))?.value || '32');
+    const kickOn = (document.getElementById('polyKick'))?.checked;
+    const hihatOn = (document.getElementById('polyHihat'))?.checked;
 
     // Parse polyrhythm
     const [a, b] = type.split(':').map(Number);
 
     // Generate patterns
-    const patternA: number[] = [];
-    const patternB: number[] = [];
+    const patternA = [];
+    const patternB = [];
     const lcm = (a * b) / gcd(a, b);
 
-    function gcd(x: number, y: number): number {
+    function gcd(x, y) {
         return y === 0 ? x : gcd(y, x % y);
     }
 
@@ -9699,7 +9699,7 @@ window.generatePolyrhythm = function() {
     window.polyrhythmPattern = { type, a, b, patternA, patternB };
 
     if (window.UIController?.toast) {
-        window.UIController.toast(`🌀 Polyrhythm ${type} generated! LCM cycle: ${lcm}`);
+        window.UIController.toast(`🌀 Polyrhythm ${type} generated LCM cycle: ${lcm}`);
     }
 };
 
@@ -9782,7 +9782,7 @@ window.startBeatbox = async function() {
     const btnEl = document.getElementById('bbStartBtn');
 
     if (statusEl) statusEl.textContent = '🔴';
-    if (textEl) textEl.textContent = 'Listening... Make some beats!';
+    if (textEl) textEl.textContent = 'Listening... Make some beats';
     if (btnEl) btnEl.textContent = '🎵 RECORDING...';
 
     window.beatboxRecording = true;
@@ -9790,7 +9790,7 @@ window.startBeatbox = async function() {
 
     // Simulate beatbox detection (in real app, would use Web Audio API)
     window.beatboxInterval = setInterval(() => {
-        if (!window.beatboxRecording) return;
+        if (window.beatboxRecording) return;
 
         const levelEl = document.getElementById('beatboxLevel');
         if (levelEl) {
@@ -9807,7 +9807,7 @@ window.startBeatbox = async function() {
     }, 100);
 
     if (window.UIController?.toast) {
-        window.UIController.toast('🎤 Beatbox mode active! Start beatboxing!');
+        window.UIController.toast('🎤 Beatbox mode active Start beatboxing');
     }
 };
 
@@ -9823,19 +9823,19 @@ window.stopBeatbox = function() {
     const btnEl = document.getElementById('bbStartBtn');
 
     if (statusEl) statusEl.textContent = '✅';
-    if (textEl) textEl.textContent = 'Recording stopped! Click APPLY to use pattern.';
+    if (textEl) textEl.textContent = 'Recording stopped Click APPLY to use pattern.';
     if (btnEl) btnEl.textContent = '🎤 START BEATBOXING';
 };
 
 window.applyBeatboxPattern = function() {
-    if (!window.beatboxPattern) return;
+    if (window.beatboxPattern) return;
 
     const kickCount = window.beatboxPattern.kick.length;
     const snareCount = window.beatboxPattern.snare.length;
     const hihatCount = window.beatboxPattern.hihat.length;
 
     if (window.UIController?.toast) {
-        window.UIController.toast(`✅ Beatbox applied! 🥁${kickCount} 🎩${hihatCount} 👏${snareCount}`);
+        window.UIController.toast(`✅ Beatbox applied 🥁${kickCount} 🎩${hihatCount} 👏${snareCount}`);
     }
 };
 
