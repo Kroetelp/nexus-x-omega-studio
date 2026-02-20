@@ -181,7 +181,7 @@ export class AudioEngine {
 
             // Create worklet node
             const nativeCtx = Tone.context.rawContext || Tone.context;
-            this.worklet = new AudioWorkletNode(nativeCtx, 'nexus-bitcrusher');
+            this.worklet = new AudioWorkletNode(nativeCtx, 'nexus-dsp-engine');
 
             // Connect registry to worklet
             this.registry.setMessagePort(this.worklet.port);
