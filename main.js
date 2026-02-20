@@ -6406,3 +6406,319 @@ window.openDrum808 = async function() {
     console.log('[808] Drum Pad opened - use keys 1-5, Q-R, Z-U or click pads!');
 };
 
+// ============================================================
+// SONG STRUCTURE EDITOR - Edit generated songs before playback
+// ============================================================
+let songEditorDialog = null;
+
+window.openSongEditor = async function() {
+    // Toggle if already open
+    if (songEditorDialog) {
+        songEditorDialog.close();
+        songEditorDialog.remove();
+        songEditorDialog = null;
+        return;
+    }
+
+    // Get current structure from arranger
+    const currentStructure = window.arranger?.structure || [];
+
+    // Create dialog
+    const dialog = document.createElement('dialog');
+    dialog.id = 'songEditorDialog';
+    dialog.style.cssText = `
+        width: 900px;
+        max-width: 95vw;
+        max-height: 85vh;
+        background: radial-gradient(circle at center, rgba(17,17,17,0.98) 0%, rgba(5,5,5,0.99) 100%);
+        border: 1px solid #333;
+        border-radius: 16px;
+        padding: 0;
+        color: #fff;
+        z-index: 10000;
+        overflow-y: auto;
+    `;
+
+    dialog.innerHTML = `
+        <div style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 800; color: #7c3aed; text-shadow: 0 0 15px rgba(124,58,237,0.5);">
+                    📝 SONG STRUCTURE EDITOR
+                </div>
+                <button onclick="this.closest('dialog').close(); document.getElementById('songEditorDialog')?.remove(); window.songEditorDialog = null;"
+                    style="background: transparent; border: 1px solid #444; color: #666; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    ✕
+                </button>
+            </div>
+            <div id="songEditorContent"></div>
+        </div>
+    `;
+
+    // Build the editor content
+    const content = dialog.querySelector('#songEditorContent');
+    content.innerHTML = `
+        <style>
+            .se-section-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; max-height: 400px; overflow-y: auto; }
+            .se-section-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 15px;
+                background: #1a1a1a;
+                border: 1px solid #333;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            .se-section-item:hover { background: #222; border-color: #444; }
+            .se-section-item.selected { border-color: #7c3aed; box-shadow: 0 0 10px rgba(124,58,237,0.3); }
+            .se-section-color { width: 12px; height: 40px; border-radius: 4px; }
+            .se-section-info { flex: 1; }
+            .se-section-name { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #fff; }
+            .se-section-details { font-size: 11px; color: #666; margin-top: 4px; }
+            .se-section-bars { display: flex; align-items: center; gap: 5px; }
+            .se-bar-btn {
+                background: #222;
+                border: 1px solid #333;
+                color: #888;
+                width: 28px;
+                height: 28px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+            }
+            .se-bar-btn:hover { background: #333; color: #fff; }
+            .se-bar-count { font-family: 'JetBrains Mono', monospace; font-size: 16px; color: #00ff94; min-width: 40px; text-align: center; }
+            .se-toolbar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+            .se-btn {
+                background: #1a1a1a;
+                border: 1px solid #333;
+                color: #888;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 11px;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            .se-btn:hover { background: #222; color: #fff; }
+            .se-btn.primary { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+            .se-btn.danger { border-color: #ff0055; color: #ff0055; }
+            .se-stats {
+                display: flex;
+                gap: 30px;
+                padding: 15px;
+                background: #0a0a0a;
+                border-radius: 8px;
+                margin-top: 15px;
+            }
+            .se-stat { text-align: center; }
+            .se-stat-value { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 800; color: #00ff94; }
+            .se-stat-label { font-size: 11px; color: #666; margin-top: 4px; }
+            .se-add-row { display: flex; gap: 10px; margin-bottom: 15px; }
+            .se-add-select { flex: 1; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; }
+            .se-add-input { width: 80px; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; text-align: center; }
+        </style>
+        <div class="se-add-row">
+            <select class="se-add-select" id="seAddType">
+                <option value="intro">Intro</option>
+                <option value="buildup">Build-Up</option>
+                <option value="verse">Verse</option>
+                <option value="chorus" selected>Chorus</option>
+                <option value="drop">Drop</option>
+                <option value="breakdown">Breakdown</option>
+                <option value="bridge">Bridge</option>
+                <option value="fill">Fill</option>
+                <option value="outro">Outro</option>
+            </select>
+            <input type="number" class="se-add-input" id="seAddBars" value="8" min="1" max="64" placeholder="Bars">
+            <button class="se-btn primary" onclick="window.addSongSection()">+ Add Section</button>
+        </div>
+        <div class="se-toolbar">
+            <button class="se-btn" onclick="window.duplicateSection()">📋 Duplicate</button>
+            <button class="se-btn" onclick="window.moveSection(-1)">⬆️ Move Up</button>
+            <button class="se-btn" onclick="window.moveSection(1)">⬇️ Move Down</button>
+            <button class="se-btn danger" onclick="window.deleteSection()">🗑️ Delete</button>
+            <button class="se-btn" onclick="window.extendSong(8)">➕ Add 8 Bars</button>
+            <button class="se-btn" onclick="window.extendSong(16)">➕ Add 16 Bars</button>
+        </div>
+        <div class="se-section-list" id="seSectionList"></div>
+        <div class="se-stats">
+            <div class="se-stat">
+                <div class="se-stat-value" id="seTotalSections">0</div>
+                <div class="se-stat-label">Sections</div>
+            </div>
+            <div class="se-stat">
+                <div class="se-stat-value" id="seTotalBars">0</div>
+                <div class="se-stat-label">Total Bars</div>
+            </div>
+            <div class="se-stat">
+                <div class="se-stat-value" id="seDuration">0:00</div>
+                <div class="se-stat-label">Est. Duration</div>
+            </div>
+        </div>
+        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="se-btn" onclick="window.regenerateFromStructure()">🔄 Regenerate</button>
+            <button class="se-btn primary" onclick="window.applySongStructure()">✓ Apply & Close</button>
+        </div>
+    `;
+
+    // Store structure locally
+    let localStructure = [...currentStructure];
+    let selectedIndex = -1;
+
+    const sectionColors = {
+        intro: '#666',
+        buildup: '#f59e0b',
+        verse: '#00e5ff',
+        chorus: '#00ff94',
+        drop: '#ff0055',
+        breakdown: '#7c3aed',
+        bridge: '#5865F2',
+        fill: '#ff00cc',
+        outro: '#444',
+    };
+
+    const renderSections = () => {
+        const list = dialog.querySelector('#seSectionList');
+        list.innerHTML = '';
+
+        localStructure.forEach((section, index) => {
+            const item = document.createElement('div');
+            item.className = 'se-section-item' + (index === selectedIndex ? ' selected' : '');
+
+            const color = sectionColors[section.type] || section.color || '#333';
+
+            item.innerHTML = `
+                <div class="se-section-color" style="background: ${color}"></div>
+                <div class="se-section-info">
+                    <div class="se-section-name">${section.name || section.type.toUpperCase()}</div>
+                    <div class="se-section-details">Type: ${section.type} | Energy: ${Math.round((section.energy || 0.5) * 100)}%</div>
+                </div>
+                <div class="se-section-bars">
+                    <button class="se-bar-btn" onclick="event.stopPropagation(); window.adjustBars(${index}, -1)">-</button>
+                    <span class="se-bar-count">${section.bars}</span>
+                    <button class="se-bar-btn" onclick="event.stopPropagation(); window.adjustBars(${index}, 1)">+</button>
+                </div>
+            `;
+
+            item.addEventListener('click', () => {
+                selectedIndex = index;
+                renderSections();
+            });
+
+            list.appendChild(item);
+        });
+
+        updateStats();
+    };
+
+    const updateStats = () => {
+        const totalBars = localStructure.reduce((sum, s) => sum + s.bars, 0);
+        const bpm = window.Tone?.Transport?.bpm?.value || 128;
+        const secondsPerBar = (60 / bpm) * 4;
+        const totalSeconds = totalBars * secondsPerBar;
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = Math.round(totalSeconds % 60);
+
+        dialog.querySelector('#seTotalSections').textContent = localStructure.length;
+        dialog.querySelector('#seTotalBars').textContent = totalBars;
+        dialog.querySelector('#seDuration').textContent = `${minutes}:${String(seconds).padStart(2, '0')}`;
+    };
+
+    // Global functions for buttons
+    window.addSongSection = () => {
+        const type = dialog.querySelector('#seAddType').value;
+        const bars = parseInt(dialog.querySelector('#seAddBars').value) || 8;
+        const typeNames = { intro: 'Intro', buildup: 'Build-Up', verse: 'Verse', chorus: 'Chorus', drop: 'Drop', breakdown: 'Breakdown', bridge: 'Bridge', fill: 'Fill', outro: 'Outro' };
+
+        localStructure.push({
+            type,
+            name: typeNames[type] || type,
+            bars,
+            energy: 0.5,
+            color: sectionColors[type] || '#333',
+        });
+        selectedIndex = localStructure.length - 1;
+        renderSections();
+    };
+
+    window.adjustBars = (index, delta) => {
+        if (index >= 0 && index < localStructure.length) {
+            localStructure[index].bars = Math.max(1, Math.min(64, localStructure[index].bars + delta));
+            renderSections();
+        }
+    };
+
+    window.duplicateSection = () => {
+        if (selectedIndex >= 0) {
+            const copy = { ...localStructure[selectedIndex] };
+            localStructure.splice(selectedIndex + 1, 0, copy);
+            selectedIndex++;
+            renderSections();
+        }
+    };
+
+    window.moveSection = (delta) => {
+        if (selectedIndex >= 0) {
+            const newIndex = selectedIndex + delta;
+            if (newIndex >= 0 && newIndex < localStructure.length) {
+                const item = localStructure.splice(selectedIndex, 1)[0];
+                localStructure.splice(newIndex, 0, item);
+                selectedIndex = newIndex;
+                renderSections();
+            }
+        }
+    };
+
+    window.deleteSection = () => {
+        if (selectedIndex >= 0) {
+            localStructure.splice(selectedIndex, 1);
+            selectedIndex = Math.min(selectedIndex, localStructure.length - 1);
+            renderSections();
+        }
+    };
+
+    window.extendSong = (bars) => {
+        if (localStructure.length > 0) {
+            localStructure[localStructure.length - 1].bars += bars;
+        } else {
+            localStructure.push({ type: 'outro', name: 'Outro', bars, energy: 0.3, color: '#444' });
+            selectedIndex = 0;
+        }
+        renderSections();
+    };
+
+    window.regenerateFromStructure = () => {
+        if (window.arranger && localStructure.length > 0) {
+            window.arranger.structure = localStructure;
+            dialog.close();
+            dialog.remove();
+            songEditorDialog = null;
+            window.arranger.generateFullSong();
+        }
+    };
+
+    window.applySongStructure = () => {
+        if (window.arranger) {
+            window.arranger.structure = localStructure;
+            console.log('[SongEditor] Applied structure:', localStructure.length, 'sections,', localStructure.reduce((s, x) => s + x.bars, 0), 'bars');
+            if (window.UIController?.toast) {
+                window.UIController.toast(`✓ Song structure updated: ${localStructure.length} sections`);
+            }
+        }
+        dialog.close();
+        dialog.remove();
+        songEditorDialog = null;
+    };
+
+    // Initial render
+    renderSections();
+
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    songEditorDialog = dialog;
+
+    console.log('[SongEditor] Opened with', localStructure.length, 'sections');
+};
+
