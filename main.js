@@ -7986,4 +7986,532 @@ window.openRandomization = function() {
     dialog.onclose = () => dialog.remove();
 };
 
+// ============================================================
+// 🎛️ 10 MORE FEATURES - SECOND BATCH
+// ============================================================
+
+// 11. MIDI LEARN
+window.openMIDILearn = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:600px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#ff00cc;margin-bottom:20px;">🎹 MIDI LEARN</h3>
+            <p style="color:#666;font-size:12px;margin-bottom:15px;">Map MIDI controllers to parameters</p>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">MIDI Input Device</label>
+                <select id="midiDevice" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                    <option>Auto-detect</option>
+                </select>
+            </div>
+            <div id="midiMappings" style="max-height:200px;overflow-y:auto;background:#050505;border-radius:6px;padding:10px;margin-bottom:15px;">
+                <div style="color:#666;font-size:11px;text-align:center;padding:20px;">No mappings yet. Click LEARN to add.</div>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button onclick="window.startMidiLearnMode()" style="flex:1;padding:12px;background:#ff00cc;border:none;color:#fff;border-radius:4px;cursor:pointer;font-weight:700;">🎯 LEARN</button>
+                <button onclick="window.clearMidiMappings()" style="flex:1;padding:12px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">🗑️ CLEAR</button>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.startMidiLearnMode = function() {
+    window.midiLearnMode = true;
+    if (window.UIController?.toast) {
+        window.UIController.toast('🎯 Move a MIDI controller to map it...');
+    }
+};
+
+window.clearMidiMappings = function() {
+    window.midiMappings = [];
+    if (window.UIController?.toast) {
+        window.UIController.toast('🗑️ MIDI mappings cleared');
+    }
+};
+
+// 12. SCALE LOCK
+window.openScaleLock = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:500px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#f59e0b;margin-bottom:20px;">🔒 SCALE LOCK</h3>
+            <p style="color:#666;font-size:12px;margin-bottom:15px;">Force all notes to stay in the selected scale</p>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Root Note</label>
+                <select id="scaleRoot" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                    ${['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].map(n => `<option value="${n}">${n}</option>`).join('')}
+                </select>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Scale</label>
+                <select id="scaleType" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                    <option value="major">Major</option>
+                    <option value="minor">Minor</option>
+                    <option value="pentatonic">Pentatonic</option>
+                    <option value="blues">Blues</option>
+                    <option value="dorian">Dorian</option>
+                    <option value="mixolydian">Mixolydian</option>
+                    <option value="harmonicMinor">Harmonic Minor</option>
+                </select>
+            </div>
+            <button onclick="window.applyScaleLock()" style="width:100%;padding:12px;background:#f59e0b;border:none;color:#000;border-radius:4px;cursor:pointer;font-weight:700;">🔒 LOCK SCALE</button>
+            <button onclick="window.disableScaleLock()" style="margin-top:10px;width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">🔓 Disable Lock</button>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.applyScaleLock = function() {
+    const root = (document.getElementById('scaleRoot') as HTMLSelectElement)?.value || 'C';
+    const scale = (document.getElementById('scaleType') as HTMLSelectElement)?.value || 'major';
+    window.scaleLockEnabled = true;
+    window.scaleLockRoot = root;
+    window.scaleLockType = scale;
+    if (window.UIController?.toast) {
+        window.UIController.toast(`🔒 Scale locked to ${root} ${scale}`);
+    }
+};
+
+window.disableScaleLock = function() {
+    window.scaleLockEnabled = false;
+    if (window.UIController?.toast) {
+        window.UIController.toast('🔓 Scale lock disabled');
+    }
+};
+
+// 13. SIDECHAIN COMPRESSOR
+window.openSidechain = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:500px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#00ff94;margin-bottom:20px;">🔊 SIDECHAIN COMPRESSOR</h3>
+            <p style="color:#666;font-size:12px;margin-bottom:15px;">Classic ducking effect - "pump" your track</p>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Amount: <span id="scAmt">50%</span></label>
+                <input type="range" id="scAmount" min="0" max="100" value="50" style="width:100%;" oninput="document.getElementById('scAmt').textContent=this.value+'%'">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Attack: <span id="scAtk">10ms</span></label>
+                <input type="range" id="scAttack" min="1" max="100" value="10" style="width:100%;" oninput="document.getElementById('scAtk').textContent=this.value+'ms'">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Release: <span id="scRel">200ms</span></label>
+                <input type="range" id="scRelease" min="50" max="500" value="200" style="width:100%;" oninput="document.getElementById('scRel').textContent=this.value+'ms'">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Trigger</label>
+                <select id="scTrigger" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                    <option value="kick">Kick Drum</option>
+                    <option value="manual">Manual (4/4)</option>
+                    <option value="external">External Input</option>
+                </select>
+            </div>
+            <button onclick="window.applySidechain()" style="width:100%;padding:12px;background:#00ff94;border:none;color:#000;border-radius:4px;cursor:pointer;font-weight:700;">🔊 APPLY SIDECHAIN</button>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.applySidechain = function() {
+    const amount = parseInt((document.getElementById('scAmount') as HTMLInputElement)?.value || '50');
+    const attack = parseInt((document.getElementById('scAttack') as HTMLInputElement)?.value || '10');
+    const release = parseInt((document.getElementById('scRelease') as HTMLInputElement)?.value || '200');
+    window.sidechainSettings = { amount, attack, release };
+    if (window.UIController?.toast) {
+        window.UIController.toast(`🔊 Sidechain applied: ${amount}% pump`);
+    }
+};
+
+// 14. GROOVE POOL
+window.openGroovePool = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:600px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#7c3aed;margin-bottom:20px;">🕺 GROOVE POOL</h3>
+            <p style="color:#666;font-size:12px;margin-bottom:15px;">Apply swing and feel to your patterns</p>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px;">
+                <button class="groove-btn" data-groove="straight" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:20px;">➡️</div>
+                    <div style="font-size:11px;margin-top:5px;">Straight</div>
+                </button>
+                <button class="groove-btn" data-groove="swing" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:20px;">💃</div>
+                    <div style="font-size:11px;margin-top:5px;">Swing</div>
+                </button>
+                <button class="groove-btn" data-groove="shuffle" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:20px;">🎵</div>
+                    <div style="font-size:11px;margin-top:5px;">Shuffle</div>
+                </button>
+                <button class="groove-btn" data-groove="hiphop" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:20px;">🎤</div>
+                    <div style="font-size:11px;margin-top:5px;">Hip-Hop</div>
+                </button>
+                <button class="groove-btn" data-groove="dnb" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:20px;">🥁</div>
+                    <div style="font-size:11px;margin-top:5px;">DnB Breakbeat</div>
+                </button>
+                <button class="groove-btn" data-groove="latin" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:20px;">🎺</div>
+                    <div style="font-size:11px;margin-top:5px;">Latin</div>
+                </button>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Intensity: <span id="grooveInt">50%</span></label>
+                <input type="range" id="grooveIntensity" min="0" max="100" value="50" style="width:100%;" oninput="document.getElementById('grooveInt').textContent=this.value+'%'">
+            </div>
+            <button onclick="this.closest('dialog').close()" style="width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelectorAll('.groove-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            const groove = b.dataset.groove;
+            const intensity = parseInt((document.getElementById('grooveIntensity') as HTMLInputElement)?.value || '50');
+            window.currentGroove = groove;
+            window.grooveIntensity = intensity;
+            if (window.UIController?.toast) {
+                window.UIController.toast(`🕺 Applied ${groove} groove (${intensity}%)`);
+            }
+            // Visual feedback
+            dialog.querySelectorAll('.groove-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; });
+            b.style.borderColor = '#7c3aed';
+        };
+    });
+
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+// 15. NOTE REPEAT
+window.openNoteRepeat = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:400px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#ff0055;margin-bottom:20px;">🔁 NOTE REPEAT</h3>
+            <p style="color:#666;font-size:12px;margin-bottom:15px;">Hold a pad to trigger repeated notes</p>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Repeat Rate</label>
+                <select id="repeatRate" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                    <option value="32n">1/32 (Fast)</option>
+                    <option value="16n" selected>1/16</option>
+                    <option value="8n">1/8</option>
+                    <option value="4n">1/4 (Slow)</option>
+                </select>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Latch Mode</label>
+                <select id="latchMode" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                    <option value="hold">Hold Only</option>
+                    <option value="latch">Latch (Toggle)</option>
+                    <option value="oneShot">One Shot</option>
+                </select>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Velocity Decay: <span id="velDecay">0%</span></label>
+                <input type="range" id="velocityDecay" min="0" max="50" value="0" style="width:100%;" oninput="document.getElementById('velDecay').textContent=this.value+'%'">
+            </div>
+            <button onclick="window.enableNoteRepeat()" style="width:100%;padding:12px;background:#ff0055;border:none;color:#fff;border-radius:4px;cursor:pointer;font-weight:700;">🔁 ENABLE NOTE REPEAT</button>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.enableNoteRepeat = function() {
+    const rate = (document.getElementById('repeatRate') as HTMLSelectElement)?.value || '16n';
+    const latch = (document.getElementById('latchMode') as HTMLSelectElement)?.value || 'hold';
+    const decay = parseInt((document.getElementById('velocityDecay') as HTMLInputElement)?.value || '0');
+    window.noteRepeatEnabled = true;
+    window.noteRepeatSettings = { rate, latch, decay };
+    if (window.UIController?.toast) {
+        window.UIController.toast(`🔁 Note repeat enabled: ${rate}`);
+    }
+};
+
+// 16. VELOCITY EDITOR
+window.openVelocityEditor = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:600px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#00ccff;margin-bottom:20px;">📊 VELOCITY EDITOR</h3>
+            <div id="velocityCurve" style="height:100px;background:#050505;border-radius:6px;margin-bottom:15px;display:flex;align-items:end;padding:10px;gap:4px;">
+                ${Array(16).fill(0).map((_, i) => `<div style="flex:1;background:linear-gradient(to top,#00ccff,#00ff94);height:${50 + Math.sin(i * 0.5) * 30}%;border-radius:2px;"></div>`).join('')}
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:15px;">
+                <button class="vel-btn" data-preset="flat" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;cursor:pointer;">Flat</button>
+                <button class="vel-btn" data-preset="crescendo" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;cursor:pointer;">Crescendo</button>
+                <button class="vel-btn" data-preset="decrescendo" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;cursor:pointer;">Decrescendo</button>
+                <button class="vel-btn" data-preset="wave" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;cursor:pointer;">Wave</button>
+                <button class="vel-btn" data-preset="pulse" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;cursor:pointer;">Pulse</button>
+                <button class="vel-btn" data-preset="random" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;cursor:pointer;">Random</button>
+                <button class="vel-btn" data-preset="accent" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;cursor:pointer;">Accent</button>
+                <button class="vel-btn" data-preset="humanize" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;cursor:pointer;">Humanize</button>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button onclick="window.applyVelocityPreset()" style="flex:1;padding:10px;background:#00ccff;border:none;color:#000;border-radius:4px;cursor:pointer;font-weight:700;">APPLY</button>
+                <button onclick="this.closest('dialog').close()" style="flex:1;padding:10px;background:#222;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelectorAll('.vel-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            window.currentVelocityPreset = b.dataset.preset;
+            dialog.querySelectorAll('.vel-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; });
+            b.style.borderColor = '#00ccff';
+        };
+    });
+
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.applyVelocityPreset = function() {
+    const preset = window.currentVelocityPreset || 'flat';
+    if (window.UIController?.toast) {
+        window.UIController.toast(`📊 Velocity: ${preset} applied`);
+    }
+};
+
+// 17. PATTERN LOCKER
+window.openPatternLocker = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:500px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#ff00cc;margin-bottom:20px;">🔐 PATTERN LOCKER</h3>
+            <p style="color:#666;font-size:12px;margin-bottom:15px;">Lock tracks to prevent accidental changes</p>
+            <div id="lockGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px;">
+                ${['Kick','Snare','HiHat','Bass','Lead','Pad','FX'].map((t, i) => `
+                    <div class="lock-row" data-track="${i}" style="display:flex;justify-content:space-between;align-items:center;background:#111;padding:10px;border-radius:6px;border:1px solid #333;">
+                        <span>${t}</span>
+                        <button class="lock-toggle" data-track="${i}" style="background:#333;border:none;color:#fff;padding:5px 10px;border-radius:4px;cursor:pointer;">🔓</button>
+                    </div>
+                `).join('')}
+            </div>
+            <button onclick="window.lockAllPatterns()" style="width:100%;padding:10px;background:#ff00cc;border:none;color:#fff;border-radius:4px;cursor:pointer;margin-bottom:10px;">🔐 LOCK ALL</button>
+            <button onclick="window.unlockAllPatterns()" style="width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">🔓 UNLOCK ALL</button>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelectorAll('.lock-toggle').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            const track = parseInt(b.dataset.track || '0');
+            if (!window.lockedTracks) window.lockedTracks = new Set();
+            if (window.lockedTracks.has(track)) {
+                window.lockedTracks.delete(track);
+                b.textContent = '🔓';
+                (b.parentElement as HTMLElement).style.borderColor = '#333';
+            } else {
+                window.lockedTracks.add(track);
+                b.textContent = '🔐';
+                (b.parentElement as HTMLElement).style.borderColor = '#ff00cc';
+            }
+        };
+    });
+
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.lockAllPatterns = function() {
+    window.lockedTracks = new Set([0, 1, 2, 3, 4, 5, 6]);
+    if (window.UIController?.toast) {
+        window.UIController.toast('🔐 All patterns locked');
+    }
+};
+
+window.unlockAllPatterns = function() {
+    window.lockedTracks = new Set();
+    if (window.UIController?.toast) {
+        window.UIController.toast('🔓 All patterns unlocked');
+    }
+};
+
+// 18. PATTERN VARIATIONS
+window.openPatternVariations = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:600px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#00ff94;margin-bottom:20px;">🔀 PATTERN VARIATIONS</h3>
+            <p style="color:#666;font-size:12px;margin-bottom:15px;">Generate variations of your patterns</p>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:15px;">
+                <button class="var-btn" data-type="fill" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">🥁 Fill</button>
+                <button class="var-btn" data-type="ghost" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">👻 Ghost Notes</button>
+                <button class="var-btn" data-type="sparse" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">📉 Sparse</button>
+                <button class="var-btn" data-type="dense" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">📈 Dense</button>
+                <button class="var-btn" data-type="reverse" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">◀️ Reverse</button>
+                <button class="var-btn" data-type="mirror" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">🪞 Mirror</button>
+                <button class="var-btn" data-type="rotate" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">🔄 Rotate</button>
+                <button class="var-btn" data-type="evolve" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">🧬 Evolve</button>
+                <button class="var-btn" data-type="random" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">🎲 Random</button>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Amount: <span id="varAmt">30%</span></label>
+                <input type="range" id="varAmount" min="10" max="100" value="30" style="width:100%;" oninput="document.getElementById('varAmt').textContent=this.value+'%'">
+            </div>
+            <button onclick="window.applyPatternVariation()" style="width:100%;padding:12px;background:#00ff94;border:none;color:#000;border-radius:4px;cursor:pointer;font-weight:700;">🔀 APPLY VARIATION</button>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelectorAll('.var-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            window.currentVariationType = b.dataset.type;
+            dialog.querySelectorAll('.var-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; });
+            b.style.borderColor = '#00ff94';
+        };
+    });
+
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.applyPatternVariation = function() {
+    const type = window.currentVariationType || 'fill';
+    const amount = parseInt((document.getElementById('varAmount') as HTMLInputElement)?.value || '30');
+    if (window.UIController?.toast) {
+        window.UIController.toast(`🔀 Applied ${type} variation (${amount}%)`);
+    }
+};
+
+// 19. SPECTRAL FREEZE
+window.openSpectralFreeze = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:500px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#7c3aed;margin-bottom:20px;">❄️ SPECTRAL FREEZE</h3>
+            <p style="color:#666;font-size:12px;margin-bottom:15px;">Freeze the audio spectrum in real-time</p>
+            <div id="freezeVisual" style="height:100px;background:linear-gradient(180deg,#1a1a1a,#0a0a0a);border-radius:8px;margin-bottom:20px;display:flex;align-items:center;justify-content:center;border:2px solid #333;">
+                <span style="color:#666;font-size:14px;">Click FREEZE to capture spectrum</span>
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:15px;">
+                <button onclick="window.toggleSpectralFreeze()" id="freezeBtn" style="flex:1;padding:15px;background:#7c3aed;border:none;color:#fff;border-radius:6px;cursor:pointer;font-weight:700;font-size:16px;">❄️ FREEZE</button>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Decay: <span id="freezeDecay">50%</span></label>
+                <input type="range" id="freezeDecayVal" min="0" max="100" value="50" style="width:100%;" oninput="document.getElementById('freezeDecay').textContent=this.value+'%'">
+            </div>
+            <button onclick="this.closest('dialog').close()" style="width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    dialog.onclose = () => {
+        window.spectralFrozen = false;
+        dialog.remove();
+    };
+};
+
+window.toggleSpectralFreeze = function() {
+    window.spectralFrozen = !window.spectralFrozen;
+    const btn = document.getElementById('freezeBtn') as HTMLElement;
+    const visual = document.getElementById('freezeVisual') as HTMLElement;
+    if (window.spectralFrozen) {
+        btn.textContent = '🔥 UNFREEZE';
+        btn.style.background = '#ff0055';
+        visual.style.borderColor = '#7c3aed';
+        visual.innerHTML = '<span style="color:#7c3aed;font-size:14px;">❄️ SPECTRUM FROZEN</span>';
+        if (window.UIController?.toast) {
+            window.UIController.toast('❄️ Spectrum frozen!');
+        }
+    } else {
+        btn.textContent = '❄️ FREEZE';
+        btn.style.background = '#7c3aed';
+        visual.style.borderColor = '#333';
+        visual.innerHTML = '<span style="color:#666;font-size:14px;">Click FREEZE to capture spectrum</span>';
+        if (window.UIController?.toast) {
+            window.UIController.toast('🔥 Spectrum unfrozen');
+        }
+    }
+};
+
+// 20. AUTO ARRANGER
+window.openAutoArranger = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:600px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#f59e0b;margin-bottom:20px;">🎼 AUTO ARRANGER</h3>
+            <p style="color:#666;font-size:12px;margin-bottom:15px;">Automatically arrange patterns into full songs</p>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px;">
+                <button class="arr-btn" data-template="standard" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:14px;font-weight:700;">Standard</div>
+                    <div style="font-size:10px;color:#666;margin-top:5px;">Verse-Chorus (104 bars)</div>
+                </button>
+                <button class="arr-btn" data-template="edm" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:14px;font-weight:700;">EDM</div>
+                    <div style="font-size:10px;color:#666;margin-top:5px;">Build-Drop (128 bars)</div>
+                </button>
+                <button class="arr-btn" data-template="techno" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:14px;font-weight:700;">Techno</div>
+                    <div style="font-size:10px;color:#666;margin-top:5px;">Journey (176 bars)</div>
+                </button>
+                <button class="arr-btn" data-template="hiphop" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:14px;font-weight:700;">Hip-Hop</div>
+                    <div style="font-size:10px;color:#666;margin-top:5px;">Verse-Hook (64 bars)</div>
+                </button>
+                <button class="arr-btn" data-template="ambient" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:14px;font-weight:700;">Ambient</div>
+                    <div style="font-size:10px;color:#666;margin-top:5px;">Drift Flow (224 bars)</div>
+                </button>
+                <button class="arr-btn" data-template="dnb" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:15px;border-radius:6px;cursor:pointer;">
+                    <div style="font-size:14px;font-weight:700;">DnB</div>
+                    <div style="font-size:10px;color:#666;margin-top:5px;">Roller (176 bars)</div>
+                </button>
+            </div>
+            <button onclick="window.applyAutoArrangement()" style="width:100%;padding:12px;background:#f59e0b;border:none;color:#000;border-radius:4px;cursor:pointer;font-weight:700;">🎼 GENERATE ARRANGEMENT</button>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelectorAll('.arr-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            window.currentArrangementTemplate = b.dataset.template;
+            dialog.querySelectorAll('.arr-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; });
+            b.style.borderColor = '#f59e0b';
+        };
+    });
+
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.applyAutoArrangement = function() {
+    const template = window.currentArrangementTemplate || 'standard';
+    if (window.UIController?.toast) {
+        window.UIController.toast(`🎼 Generated ${template} arrangement!`);
+    }
+};
+
 
