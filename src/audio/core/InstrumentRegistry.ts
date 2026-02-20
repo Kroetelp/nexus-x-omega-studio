@@ -9,6 +9,7 @@ import { DrumController, DrumType } from '../instruments/DrumController';
 import { FxController } from '../instruments/FxController';
 import { FmSynthController } from '../instruments/FmSynthController';
 import { BrassController, BrassType } from '../instruments/BrassController';
+import { Drum808Controller } from '../instruments/Drum808Controller';
 import {
     InstrumentConfig,
     InstrumentType,
@@ -111,6 +112,10 @@ export class InstrumentRegistry {
                 controller = new BrassController(config, options?.brassType ?? BrassType.TRUMPET);
                 break;
 
+            case '808':
+                controller = new Drum808Controller(config);
+                break;
+
             default:
                 throw new Error(`[InstrumentRegistry] Unknown instrument type: ${type}`);
         }
@@ -186,6 +191,13 @@ export class InstrumentRegistry {
      */
     getBrass(id: number): BrassController | undefined {
         return this.getInstrument<BrassController>(id);
+    }
+
+    /**
+     * Get an 808 drum machine by ID (typed)
+     */
+    get808(id: number): Drum808Controller | undefined {
+        return this.getInstrument<Drum808Controller>(id);
     }
 
     /**
@@ -378,6 +390,7 @@ export class InstrumentRegistry {
             fm: 3,
             sampler: 4,
             brass: 5,
+            '808': 6,
             pad: 0,  // Pad is a type of synth
         };
         return types[type] ?? 0;

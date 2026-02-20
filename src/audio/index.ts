@@ -24,6 +24,7 @@ export { DrumController, DrumParam, DrumType, DRUM_PRESETS } from './instruments
 export { FxController, FxParam, FX_PRESETS } from './instruments/FxController';
 export { FmSynthController, FmSynthParam, FmAlgorithm, FmOperator, FmSynthPreset, FM_SYNTH_PRESETS } from './instruments/FmSynthController';
 export { BrassController, BrassParam, BrassType, MuteType, BrassPreset, BRASS_PRESETS } from './instruments/BrassController';
+export { Drum808Controller, Drum808Param, Drum808Sound, Drum808Preset, DRUM_808_PRESETS } from './instruments/Drum808Controller';
 
 // ============================================================
 // WORKLET

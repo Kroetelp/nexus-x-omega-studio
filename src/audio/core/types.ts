@@ -7,7 +7,7 @@
 // INSTRUMENT TYPES
 // ============================================================
 
-export type InstrumentType = 'synth' | 'drum' | 'fx' | 'sampler' | 'pad' | 'fm' | 'brass';
+export type InstrumentType = 'synth' | 'drum' | 'fx' | 'sampler' | 'pad' | 'fm' | 'brass' | '808';
 
 export interface InstrumentConfig {
     id: number;

@@ -666,6 +666,516 @@ class JsBrassSynth {
     }
 }
 
+// ============================================================
+// TR-808 DRUM MACHINE (Authentic Roland TR-808 synthesis)
+// ============================================================
+class JsDrum808 {
+    constructor(id) {
+        this.id = id;
+
+        // === KICK parameters ===
+        this.kickTune = 5;
+        this.kickDecay = 0.8;
+        this.kickAttack = 0.002;
+        this.kickComp = 0.3;
+        this.kickLevel = 0.9;
+
+        // === SNARE parameters ===
+        this.snareTune = 5;
+        this.snareTone = 0.5;
+        this.snareSnappy = 0.7;
+        this.snareDecay = 0.2;
+        this.snareLevel = 0.8;
+
+        // === CLAP parameters ===
+        this.clapDecay = 0.3;
+        this.clapFilter = 0.5;
+        this.clapReverb = 0.3;
+        this.clapLevel = 0.7;
+
+        // === HI-HAT parameters ===
+        this.hhTune = 6;
+        this.hhDecay = 0.05;
+        this.hhFilter = 0.5;
+        this.hhClosedLevel = 0.6;
+        this.hhOpenLevel = 0.5;
+        this.hhOpenDecay = 0.4;
+
+        // === TOM parameters ===
+        this.tomTune = 5;
+        this.tomDecay = 0.6;
+        this.tomLevel = 0.7;
+        this.tomLowLevel = 0.8;
+        this.tomMidLevel = 0.8;
+        this.tomHiLevel = 0.8;
+
+        // === COWBELL parameters ===
+        this.cowTune = 5;
+        this.cowDecay = 0.15;
+        this.cowLevel = 0.6;
+
+        // === RIMSHOT parameters ===
+        this.rimTune = 5;
+        this.rimDecay = 0.03;
+        this.rimLevel = 0.6;
+
+        // === CLAVE parameters ===
+        this.claveTune = 6;
+        this.claveDecay = 0.05;
+        this.claveLevel = 0.5;
+
+        // === MARACAS parameters ===
+        this.maracasDecay = 0.03;
+        this.maracasLevel = 0.4;
+
+        // === GLOBAL ===
+        this.accent = 0.5;
+        this.masterVol = 0.8;
+        this.pan = 0;
+
+        // Voice states for each drum
+        this.voices = new Map();
+    }
+
+    setParameter(p, v) {
+        switch (p) {
+            // Kick
+            case 0: this.kickTune = v; break;
+            case 1: this.kickDecay = v; break;
+            case 2: this.kickAttack = v; break;
+            case 3: this.kickComp = v; break;
+            case 4: this.kickLevel = v; break;
+            // Snare
+            case 10: this.snareTune = v; break;
+            case 11: this.snareTone = v; break;
+            case 12: this.snareSnappy = v; break;
+            case 13: this.snareDecay = v; break;
+            case 14: this.snareLevel = v; break;
+            // Clap
+            case 20: this.clapDecay = v; break;
+            case 21: this.clapFilter = v; break;
+            case 22: this.clapReverb = v; break;
+            case 23: this.clapLevel = v; break;
+            // Hi-Hat
+            case 30: this.hhTune = v; break;
+            case 31: this.hhDecay = v; break;
+            case 32: this.hhFilter = v; break;
+            case 33: this.hhClosedLevel = v; break;
+            case 34: this.hhOpenLevel = v; break;
+            case 35: this.hhOpenDecay = v; break;
+            // Toms
+            case 40: this.tomTune = v; break;
+            case 41: this.tomDecay = v; break;
+            case 42: this.tomLevel = v; break;
+            case 43: this.tomLowLevel = v; break;
+            case 44: this.tomMidLevel = v; break;
+            case 45: this.tomHiLevel = v; break;
+            // Cowbell
+            case 50: this.cowTune = v; break;
+            case 51: this.cowDecay = v; break;
+            case 52: this.cowLevel = v; break;
+            // Rimshot
+            case 60: this.rimTune = v; break;
+            case 61: this.rimDecay = v; break;
+            case 62: this.rimLevel = v; break;
+            // Clave
+            case 70: this.claveTune = v; break;
+            case 71: this.claveDecay = v; break;
+            case 72: this.claveLevel = v; break;
+            // Maracas
+            case 80: this.maracasDecay = v; break;
+            case 81: this.maracasLevel = v; break;
+            // Global
+            case 90: this.accent = v; break;
+            case 91: this.masterVol = v; break;
+            case 92: this.pan = v; break;
+        }
+    }
+
+    noteOn(note, vel) {
+        const now = Date.now();
+        this.voices.set(note, {
+            active: true,
+            velocity: vel,
+            startTime: now,
+            phase: 0,
+            noisePhase: 0,
+        });
+    }
+
+    noteOff(note) {
+        // 808 drums don't really have note-off (one-shot)
+    }
+
+    // The famous 808 kick: sine wave with pitch envelope
+    processKick(voice, dt, n) {
+        const samples = new Float32Array(n);
+
+        if (!voice.active) return samples;
+
+        const elapsed = (Date.now() - voice.startTime) / 1000;
+        if (elapsed > this.kickDecay * 2) {
+            voice.active = false;
+            return samples;
+        }
+
+        // Base frequency (tune 0-10 maps to ~30-100Hz)
+        const baseFreq = 30 + this.kickTune * 7;
+
+        for (let i = 0; i < n; i++) {
+            const t = elapsed + i * dt;
+
+            // Exponential decay envelope
+            const env = Math.exp(-t / this.kickDecay);
+
+            // Pitch envelope: starts 2 octaves higher, drops quickly
+            const pitchEnv = Math.exp(-t * 20);
+            const freq = baseFreq * (1 + pitchEnv * 3);
+
+            // Sine oscillator
+            voice.phase += freq * dt * Math.PI * 2;
+            let sample = Math.sin(voice.phase) * env * voice.velocity * this.kickLevel;
+
+            // Add attack click for punch
+            const click = Math.exp(-t * 200) * 0.3;
+            sample += (Math.random() * 2 - 1) * click;
+
+            // Self-distortion/compression
+            if (this.kickComp > 0) {
+                sample = Math.tanh(sample * (1 + this.kickComp * 2));
+            }
+
+            samples[i] = sample;
+        }
+
+        return samples;
+    }
+
+    // 808 Snare: tone + noise
+    processSnare(voice, dt, n) {
+        const samples = new Float32Array(n);
+
+        if (!voice.active) return samples;
+
+        const elapsed = (Date.now() - voice.startTime) / 1000;
+        if (elapsed > this.snareDecay * 3) {
+            voice.active = false;
+            return samples;
+        }
+
+        const baseFreq = 150 + this.snareTune * 30;
+
+        for (let i = 0; i < n; i++) {
+            const t = elapsed + i * dt;
+
+            const env = Math.exp(-t / this.snareDecay);
+
+            // Tone component (two detuned sines for body)
+            voice.phase += baseFreq * dt * Math.PI * 2;
+            const tone = Math.sin(voice.phase) * this.snareTone;
+            const tone2 = Math.sin(voice.phase * 1.5) * this.snareTone * 0.5;
+
+            // Noise component (snappy)
+            const noiseEnv = Math.exp(-t / (this.snareDecay * 0.5));
+            const noise = (Math.random() * 2 - 1) * this.snareSnappy * noiseEnv;
+
+            // Mix tone and noise
+            let sample = (tone + tone2 + noise) * env * voice.velocity * this.snareLevel;
+            samples[i] = sample;
+        }
+
+        return samples;
+    }
+
+    // 808 Clap: bandpass filtered noise with multiple transients
+    processClap(voice, dt, n) {
+        const samples = new Float32Array(n);
+
+        if (!voice.active) return samples;
+
+        const elapsed = (Date.now() - voice.startTime) / 1000;
+        if (elapsed > this.clapDecay * 3) {
+            voice.active = false;
+            return samples;
+        }
+
+        for (let i = 0; i < n; i++) {
+            const t = elapsed + i * dt;
+
+            // Main envelope
+            const env = Math.exp(-t / this.clapDecay);
+
+            // Multi-transient simulation (3 quick hits)
+            const transient = Math.exp(-((t % 0.01) * 500)) * (t < 0.03 ? 1 : 0);
+            const multi = transient * (1 - t * 20);
+
+            // Bandpass filtered noise
+            const noise = (Math.random() * 2 - 1);
+            const filtered = noise * (1 - this.clapFilter * 0.5);
+
+            // Reverb simulation (simple delay feedback)
+            const reverb = Math.sin(t * 800) * this.clapReverb * Math.exp(-t * 5);
+
+            let sample = (filtered + multi + reverb) * env * voice.velocity * this.clapLevel;
+            samples[i] = sample;
+        }
+
+        return samples;
+    }
+
+    // 808 Hi-Hat: 6 square waves + highpass
+    processHihat(voice, dt, n, isOpen) {
+        const samples = new Float32Array(n);
+
+        if (!voice.active) return samples;
+
+        const decay = isOpen ? this.hhOpenDecay : this.hhDecay;
+        const level = isOpen ? this.hhOpenLevel : this.hhClosedLevel;
+
+        const elapsed = (Date.now() - voice.startTime) / 1000;
+        if (elapsed > decay * 3) {
+            voice.active = false;
+            return samples;
+        }
+
+        // Base frequency for metallic sound
+        const baseFreq = 200 + this.hhTune * 100;
+
+        for (let i = 0; i < n; i++) {
+            const t = elapsed + i * dt;
+
+            const env = Math.exp(-t / decay);
+
+            // 6 detuned square waves for metallic texture
+            let metallic = 0;
+            const ratios = [1, 1.5, 2.4, 3.1, 4.2, 5.5];
+            for (const r of ratios) {
+                voice.phase += baseFreq * r * dt * Math.PI * 2;
+                metallic += (Math.sign(Math.sin(voice.phase * r)) * 0.166);
+            }
+
+            // Highpass filter simulation
+            const filtered = metallic * (1 - this.hhFilter * 0.3) + (Math.random() * 2 - 1) * 0.2;
+
+            let sample = filtered * env * voice.velocity * level;
+            samples[i] = sample;
+        }
+
+        return samples;
+    }
+
+    // 808 Cowbell: two square waves 🐮
+    processCowbell(voice, dt, n) {
+        const samples = new Float32Array(n);
+
+        if (!voice.active) return samples;
+
+        const elapsed = (Date.now() - voice.startTime) / 1000;
+        if (elapsed > this.cowDecay * 3) {
+            voice.active = false;
+            return samples;
+        }
+
+        // Classic 808 cowbell frequencies
+        const freq1 = 560 + this.cowTune * 20;
+        const freq2 = 845 + this.cowTune * 30;
+
+        for (let i = 0; i < n; i++) {
+            const t = elapsed + i * dt;
+
+            const env = Math.exp(-t / this.cowDecay);
+
+            // Two detuned square waves
+            voice.phase += dt * Math.PI * 2;
+            const osc1 = Math.sign(Math.sin(voice.phase * freq1));
+            const osc2 = Math.sign(Math.sin(voice.phase * freq2));
+
+            let sample = (osc1 + osc2) * 0.5 * env * voice.velocity * this.cowLevel;
+            samples[i] = sample;
+        }
+
+        return samples;
+    }
+
+    // 808 Toms: sine with pitch envelope
+    processTom(voice, dt, n, pitch) {
+        const samples = new Float32Array(n);
+
+        if (!voice.active) return samples;
+
+        const elapsed = (Date.now() - voice.startTime) / 1000;
+        if (elapsed > this.tomDecay * 2) {
+            voice.active = false;
+            return samples;
+        }
+
+        // Frequency based on pitch (low=0, mid=1, high=2)
+        const baseFreq = 60 + this.tomTune * 15 + pitch * 40;
+
+        for (let i = 0; i < n; i++) {
+            const t = elapsed + i * dt;
+
+            const env = Math.exp(-t / this.tomDecay);
+
+            // Pitch envelope
+            const pitchEnv = Math.exp(-t * 15);
+            const freq = baseFreq * (1 + pitchEnv);
+
+            voice.phase += freq * dt * Math.PI * 2;
+            let sample = Math.sin(voice.phase) * env * voice.velocity * this.tomLevel;
+            samples[i] = sample;
+        }
+
+        return samples;
+    }
+
+    // Rimshot: transient click
+    processRimshot(voice, dt, n) {
+        const samples = new Float32Array(n);
+
+        if (!voice.active) return samples;
+
+        const elapsed = (Date.now() - voice.startTime) / 1000;
+        if (elapsed > this.rimDecay * 3) {
+            voice.active = false;
+            return samples;
+        }
+
+        const freq = 800 + this.rimTune * 50;
+
+        for (let i = 0; i < n; i++) {
+            const t = elapsed + i * dt;
+
+            const env = Math.exp(-t / this.rimDecay);
+
+            voice.phase += freq * dt * Math.PI * 2;
+            const osc = Math.sin(voice.phase);
+
+            // Click transient
+            const click = Math.exp(-t * 500);
+
+            let sample = (osc * 0.5 + click) * env * voice.velocity * this.rimLevel;
+            samples[i] = sample;
+        }
+
+        return samples;
+    }
+
+    // Clave: short ping
+    processClave(voice, dt, n) {
+        const samples = new Float32Array(n);
+
+        if (!voice.active) return samples;
+
+        const elapsed = (Date.now() - voice.startTime) / 1000;
+        if (elapsed > this.claveDecay * 3) {
+            voice.active = false;
+            return samples;
+        }
+
+        const freq = 2000 + this.claveTune * 100;
+
+        for (let i = 0; i < n; i++) {
+            const t = elapsed + i * dt;
+
+            const env = Math.exp(-t / this.claveDecay);
+            voice.phase += freq * dt * Math.PI * 2;
+
+            let sample = Math.sin(voice.phase) * env * voice.velocity * this.claveLevel;
+            samples[i] = sample;
+        }
+
+        return samples;
+    }
+
+    // Maracas: short noise burst
+    processMaracas(voice, dt, n) {
+        const samples = new Float32Array(n);
+
+        if (!voice.active) return samples;
+
+        const elapsed = (Date.now() - voice.startTime) / 1000;
+        if (elapsed > this.maracasDecay * 3) {
+            voice.active = false;
+            return samples;
+        }
+
+        for (let i = 0; i < n; i++) {
+            const t = elapsed + i * dt;
+
+            const env = Math.exp(-t / this.maracasDecay);
+            const noise = Math.random() * 2 - 1;
+
+            let sample = noise * env * voice.velocity * this.maracasLevel;
+            samples[i] = sample;
+        }
+
+        return samples;
+    }
+
+    process(buf, n, sr) {
+        const dt = 1 / sr;
+
+        // Process each active voice based on note number
+        for (const [note, voice] of this.voices) {
+            if (!voice.active) continue;
+
+            let samples;
+
+            switch (note) {
+                case 36: // Kick
+                    samples = this.processKick(voice, dt, n);
+                    break;
+                case 38: // Snare
+                    samples = this.processSnare(voice, dt, n);
+                    break;
+                case 39: // Clap
+                    samples = this.processClap(voice, dt, n);
+                    break;
+                case 42: // Closed HH
+                    samples = this.processHihat(voice, dt, n, false);
+                    break;
+                case 46: // Open HH
+                    samples = this.processHihat(voice, dt, n, true);
+                    break;
+                case 41: // Low Tom
+                    samples = this.processTom(voice, dt, n, 0);
+                    break;
+                case 45: // Mid Tom
+                    samples = this.processTom(voice, dt, n, 1);
+                    break;
+                case 48: // High Tom
+                    samples = this.processTom(voice, dt, n, 2);
+                    break;
+                case 56: // Cowbell 🐮
+                    samples = this.processCowbell(voice, dt, n);
+                    break;
+                case 37: // Rimshot
+                    samples = this.processRimshot(voice, dt, n);
+                    break;
+                case 75: // Clave
+                    samples = this.processClave(voice, dt, n);
+                    break;
+                case 70: // Maracas
+                    samples = this.processMaracas(voice, dt, n);
+                    break;
+                default:
+                    samples = new Float32Array(n);
+            }
+
+            // Mix to output buffer
+            for (let i = 0; i < n; i++) {
+                buf[i * 2] += samples[i] * this.masterVol * (1 - Math.max(0, this.pan));
+                buf[i * 2 + 1] += samples[i] * this.masterVol * (1 + Math.min(0, this.pan));
+            }
+        }
+    }
+
+    reset() {
+        this.voices.clear();
+    }
+}
+
 class JsEngine {
     constructor() {
         this.sampleRate = 44100;
@@ -682,6 +1192,7 @@ class JsEngine {
             case 2: inst = new JsFx(id); break;                // FX processor
             case 3: inst = new JsFmSynth(id, poly || 4); break; // FM Synth
             case 5: inst = new JsBrassSynth(id, poly || 4); break; // Brass/Wind
+            case 6: inst = new JsDrum808(id); break; // TR-808 Drum Machine
             default: return false;
         }
         this.instruments.set(id, inst);
