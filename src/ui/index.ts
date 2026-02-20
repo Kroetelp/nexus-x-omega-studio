@@ -8,3 +8,5 @@ export { PianoRollEditor, PianoRollNote, PianoRollConfig } from './PianoRollEdit
 export { PianoRollDialog, showPianoRoll, getPianoRollDialog } from './PianoRollDialog';
 export { Drum808Pad, createDrum808Pad, getDrum808Pad } from './Drum808Pad';
 export { SongStructureEditor, SongSection, createSongEditor, getSongEditor } from './SongStructureEditor';
+export { NeuralVisualizer, createNeuralVisualizer, getNeuralVisualizer } from './NeuralVisualizer';
+export { AIComposerPanel, createAIComposerPanel, getAIComposerPanel } from './AIComposerPanel';
