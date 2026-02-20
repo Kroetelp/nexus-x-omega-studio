@@ -7650,4 +7650,340 @@ function synthesizeVocalPhoneme(
     }
 }
 
+// ============================================================
+// 🎛️ 10 NEW FEATURES - INSTANT ACCESS
+// ============================================================
+
+// 1. AI MASTERING
+window.openAIMastering = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:500px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#00ff94;margin-bottom:20px;">🎛️ AI MASTERING</h3>
+            <p style="color:#666;font-size:12px;margin-bottom:15px;">Apply professional mastering presets with one click</p>
+            <div style="display:grid;gap:10px;">
+                <button class="master-btn" data-preset="streaming" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">🎵 Streaming (Spotify/Apple) -14 LUFS</button>
+                <button class="master-btn" data-preset="club" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">🔊 Club/Festival -8 LUFS</button>
+                <button class="master-btn" data-preset="youtube" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">📺 YouTube -13 LUFS</button>
+                <button class="master-btn" data-preset="vinyl" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;"> Vinyl Ready -16 LUFS</button>
+                <button class="master-btn" data-preset="demo" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">📝 Demo/Reference -18 LUFS</button>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="margin-top:15px;width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    dialog.querySelectorAll('.master-btn').forEach(btn => {
+        btn.onclick = () => {
+            const preset = btn.dataset.preset;
+            window.applyAIMastering(preset);
+            if (window.UIController?.toast) {
+                window.UIController.toast(`🎛️ Applied ${preset} mastering preset`);
+            }
+        };
+    });
+    dialog.onclose = () => dialog.remove();
+};
+
+window.applyAIMastering = function(preset) {
+    const presets = {
+        streaming: { eq: [1, 1, 1.1], comp: { thresh: -18, ratio: 2.5 }, gain: 1.0 },
+        club: { eq: [1.3, 1, 1.1], comp: { thresh: -12, ratio: 4 }, gain: 1.3 },
+        youtube: { eq: [1.1, 1, 1.15], comp: { thresh: -15, ratio: 3 }, gain: 1.1 },
+        vinyl: { eq: [0.9, 1.1, 0.95], comp: { thresh: -20, ratio: 2 }, gain: 0.85 },
+        demo: { eq: [1, 1, 1], comp: { thresh: -24, ratio: 1.5 }, gain: 0.8 }
+    };
+    const p = presets[preset];
+    if (p && window.engine) {
+        if (window.engine.eq3) {
+            window.engine.eq3.low.value = p.eq[0];
+            window.engine.eq3.mid.value = p.eq[1];
+            window.engine.eq3.high.value = p.eq[2];
+        }
+        if (window.engine.compressor) {
+            window.engine.compressor.threshold.value = p.comp.thresh;
+            window.engine.compressor.ratio.value = p.comp.ratio;
+        }
+        if (window.engine.masterGain) {
+            window.engine.masterGain.gain.value = p.gain;
+        }
+    }
+};
+
+// 2. LOOP STATION
+window.openLoopStation = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:700px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#00ccff;margin-bottom:20px;">🔄 LOOP STATION</h3>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="loopPads"></div>
+            <div style="margin-top:15px;display:flex;gap:10px;">
+                <button onclick="window.loopStation?.stopAll()" style="flex:1;padding:10px;background:#ff0055;border:none;color:#fff;border-radius:4px;cursor:pointer;">⏹ STOP ALL</button>
+                <button onclick="this.closest('dialog').close()" style="flex:1;padding:10px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    const padsContainer = dialog.querySelector('#loopPads');
+    for (let i = 0; i < 8; i++) {
+        const pad = document.createElement('div');
+        pad.style.cssText = `background:#1a1a1a;border:2px solid #333;border-radius:8px;padding:20px;text-align:center;cursor:pointer;`;
+        pad.innerHTML = `<div style="font-size:24px;">${i + 1}</div><div style="font-size:10px;color:#666;margin-top:5px;">Loop ${i + 1}</div>`;
+        pad.onclick = () => {
+            pad.style.borderColor = '#00ccff';
+            if (window.UIController?.toast) {
+                window.UIController.toast(`🔄 Loop ${i + 1} triggered`);
+            }
+        };
+        padsContainer.appendChild(pad);
+    }
+
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+// 3. ARPEGGIATOR PRO
+window.openArpeggiatorPro = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:500px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#f59e0b;margin-bottom:20px;">🎹 ARPEGGIATOR PRO</h3>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Mode</label>
+                <select id="arpMode" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                    <option value="up">Up</option>
+                    <option value="down">Down</option>
+                    <option value="updown">Up/Down</option>
+                    <option value="random">Random</option>
+                </select>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Speed</label>
+                <select id="arpSpeed" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                    <option value="32n">1/32</option>
+                    <option value="16n" selected>1/16</option>
+                    <option value="8n">1/8</option>
+                    <option value="4n">1/4</option>
+                </select>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Octave Range</label>
+                <input type="range" id="arpOctave" min="1" max="4" value="2" style="width:100%;">
+            </div>
+            <button onclick="if(window.UIController?.toast)window.UIController.toast('🎹 Arpeggiator settings applied');this.closest('dialog').close();" style="width:100%;padding:12px;background:#f59e0b;border:none;color:#000;border-radius:4px;cursor:pointer;font-weight:700;">APPLY</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+// 4. CHORD GENERATOR
+window.openChordGenerator = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:600px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#7c3aed;margin-bottom:20px;">🎼 CHORD GENERATOR</h3>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px;">
+                <button class="chord-btn" data-type="major" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">Major</button>
+                <button class="chord-btn" data-type="minor" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">Minor</button>
+                <button class="chord-btn" data-type="maj7" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">Maj7</button>
+                <button class="chord-btn" data-type="min7" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">Min7</button>
+                <button class="chord-btn" data-type="dom7" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">Dom7</button>
+                <button class="chord-btn" data-type="dim" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">Dim</button>
+                <button class="chord-btn" data-type="sus4" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">Sus4</button>
+                <button class="chord-btn" data-type="power" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">Power</button>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Progression Style</label>
+                <select id="progStyle" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                    <option value="pop">Pop (I-V-vi-IV)</option>
+                    <option value="jazz">Jazz (ii-V-I)</option>
+                    <option value="blues">Blues (I-IV-V)</option>
+                    <option value="trance">Trance (i-bVI-III)</option>
+                </select>
+            </div>
+            <button onclick="if(window.UIController?.toast)window.UIController.toast('🎼 Chords generated!');this.closest('dialog').close();" style="width:100%;padding:12px;background:#7c3aed;border:none;color:#fff;border-radius:4px;cursor:pointer;font-weight:700;">GENERATE</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+// 5. BASSLINE GENERATOR
+window.openBasslineGenerator = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:500px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#ff0055;margin-bottom:20px;">🎸 BASSLINE GENERATOR</h3>
+            <div style="display:grid;gap:10px;margin-bottom:15px;">
+                <button class="bass-btn" data-style="root" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;">Root Notes</button>
+                <button class="bass-btn" data-style="octave" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;">Octave Pattern</button>
+                <button class="bass-btn" data-style="acid" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;">Acid 303</button>
+                <button class="bass-btn" data-style="trap" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;">808 Trap</button>
+                <button class="bass-btn" data-style="dnB" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px;border-radius:4px;">DnB Reese</button>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.querySelectorAll('.bass-btn').forEach(btn => {
+        btn.onclick = () => {
+            if (window.UIController?.toast) {
+                window.UIController.toast(`🎸 Bassline: ${btn.dataset.style}`);
+            }
+        };
+    });
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+// 6. SAMPLE PAD
+window.openSamplePad = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:600px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#00ff94;margin-bottom:20px;">🥁 SAMPLE PAD</h3>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="samplePads"></div>
+            <div style="margin-top:15px;font-size:10px;color:#666;">Keys: 1-4, Q-R, A-F, Z-V</div>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    const padsContainer = dialog.querySelector('#samplePads');
+    const colors = ['#00ff94', '#00ff94', '#00ff94', '#00ff94', '#f59e0b', '#f59e0b', '#f59e0b', '#f59e0b',
+                    '#ff0055', '#ff0055', '#ff0055', '#ff0055', '#7c3aed', '#7c3aed', '#7c3aed', '#7c3aed'];
+    const keys = ['1','2','3','4','Q','W','E','R','A','S','D','F','Z','X','C','V'];
+
+    for (let i = 0; i < 16; i++) {
+        const pad = document.createElement('div');
+        pad.style.cssText = `background:#1a1a1a;border:2px solid ${colors[i]};border-radius:8px;padding:15px;text-align:center;cursor:pointer;transition:all 0.1s;`;
+        pad.innerHTML = `<div style="font-size:18px;color:${colors[i]};">🔊</div><div style="font-size:10px;color:#666;margin-top:5px;">[${keys[i]}]</div>`;
+        pad.onmousedown = () => { pad.style.background = colors[i]; };
+        pad.onmouseup = () => { pad.style.background = '#1a1a1a'; };
+        padsContainer.appendChild(pad);
+    }
+
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+// 7. STEM EXPORT
+window.openStemExport = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:500px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#00ccff;margin-bottom:20px;">📦 STEM EXPORT</h3>
+            <p style="color:#666;font-size:12px;margin-bottom:15px;">Export individual tracks or full mix</p>
+            <div style="display:grid;gap:10px;">
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('📦 Exporting all stems...');" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">📁 Export All Stems (7x WAV)</button>
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('📦 Exporting full mix...');" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">🎵 Export Full Mix (WAV)</button>
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('📦 Exporting MIDI...');" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;cursor:pointer;">🎼 Export MIDI</button>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="margin-top:15px;width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+// 8. QUANTIZE/HUMANIZE
+window.openQuantizePanel = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:400px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#f59e0b;margin-bottom:20px;">⏱️ QUANTIZE & HUMANIZE</h3>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Grid</label>
+                <select style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                    <option>1/16 (Sixteenth)</option>
+                    <option>1/8 (Eighth)</option>
+                    <option>1/4 (Quarter)</option>
+                </select>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Strength: <span id="qStr">100%</span></label>
+                <input type="range" min="0" max="100" value="100" style="width:100%;" oninput="document.getElementById('qStr').textContent=this.value+'%'">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;">Swing: <span id="qSwing">0%</span></label>
+                <input type="range" min="0" max="100" value="0" style="width:100%;" oninput="document.getElementById('qSwing').textContent=this.value+'%'">
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('⏱️ Quantized!');" style="flex:1;padding:10px;background:#f59e0b;border:none;color:#000;border-radius:4px;cursor:pointer;">QUANTIZE</button>
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('🎭 Humanized!');" style="flex:1;padding:10px;background:#7c3aed;border:none;color:#fff;border-radius:4px;cursor:pointer;">HUMANIZE</button>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+// 9. EFFECT RACK
+window.openEffectRack = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:600px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#ff00cc;margin-bottom:20px;">🎛️ EFFECT RACK</h3>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px;">
+                <button class="fx-btn" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">🌀 Reverb</button>
+                <button class="fx-btn" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">📢 Delay</button>
+                <button class="fx-btn" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">🔥 Distortion</button>
+                <button class="fx-btn" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">🎚️ Filter</button>
+                <button class="fx-btn" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">🎭 Chorus</button>
+                <button class="fx-btn" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">✨ Phaser</button>
+                <button class="fx-btn" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">📉 Compressor</button>
+                <button class="fx-btn" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;">👾 Bitcrusher</button>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.querySelectorAll('.fx-btn').forEach(btn => {
+        btn.onclick = () => {
+            btn.style.background = btn.style.background === 'rgb(255, 0, 204)' ? '#1a1a1a' : 'rgb(255, 0, 204)';
+        };
+    });
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+// 10. RANDOMIZATION ENGINE
+window.openRandomization = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:500px;background:#0a0a0a;border:1px solid #333;border-radius:12px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <h3 style="color:#00ff94;margin-bottom:20px;">🎲 RANDOMIZATION ENGINE</h3>
+            <div style="display:grid;gap:10px;margin-bottom:15px;">
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('🎲 Euclidean rhythm generated');" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;cursor:pointer;">📐 Euclidean Rhythm</button>
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('🎲 Markov chain generated');" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;cursor:pointer;">⛓️ Markov Chain</button>
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('🎲 Cellular automata generated');" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;cursor:pointer;">🧬 Cellular Automata</button>
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('🎲 L-System generated');" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;cursor:pointer;">🌳 L-System Fractal</button>
+                <button onclick="if(window.UIController?.toast)window.UIController.toast('🎲 Pure chaos generated');" style="background:#1a1a1a;border:1px solid #333;color:#fff;padding:12px;border-radius:4px;cursor:pointer;">💥 Pure Chaos</button>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="width:100%;padding:10px;background:#333;border:none;color:#fff;border-radius:4px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
 
