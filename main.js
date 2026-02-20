@@ -7353,4 +7353,301 @@ function generateSimpleComposition(prompt, genre) {
     };
 }
 
+// ============================================================
+// 🎤 AI VOCAL SYNTHESIZER - Text-to-Singing
+// ============================================================
+
+window.openAIVocalSynth = async function() {
+    try {
+        const module = await import('./src/ui/AIVocalSynthPanel.js?t=' + Date.now());
+        const panel = module.createAIVocalSynthPanel();
+        panel.show();
+        console.log('[AIVocalSynth] Opened AI Vocal Synthesizer');
+    } catch (e) {
+        console.warn('[AIVocalSynth] TypeScript module failed, using fallback:', e);
+        createFallbackAIVocalSynth();
+    }
+};
+
+function createFallbackAIVocalSynth() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `
+        width: 700px; max-width: 95vw;
+        background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+        border: 1px solid #333; border-radius: 16px;
+        box-shadow: 0 0 100px rgba(255,0,204,0.2);
+        padding: 0; color: #fff;
+    `;
+
+    dialog.innerHTML = `
+        <div style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 800;
+                    color: #ff00cc; text-shadow: 0 0 20px rgba(255,0,204,0.5);">
+                    🎤 AI VOCAL SYNTHESIZER
+                </div>
+                <button onclick="this.closest('dialog').close()"
+                    style="background: transparent; border: none; color: #666; font-size: 24px; cursor: pointer;">
+                    ×
+                </button>
+            </div>
+            <p style="color: #888; font-size: 12px; margin-bottom: 15px;">
+                Text-to-Singing synthesis with formant-based vocal modeling.
+            </p>
+            <textarea id="vocalLyricsInput" placeholder="Enter lyrics...&#10;Example: Yeah oh la la da&#10;Feel the music tonight"
+                style="width: 100%; height: 80px; background: #111; border: 1px solid #333; border-radius: 8px;
+                color: #fff; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 14px; resize: none;"></textarea>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 15px 0;">
+                <div>
+                    <label style="font-size: 10px; color: #666;">Voice</label>
+                    <select id="vocalVoice" style="width: 100%; background: #111; border: 1px solid #333; border-radius: 4px; color: #fff; padding: 8px;">
+                        <option value="tenor">Tenor</option>
+                        <option value="soprano">Soprano</option>
+                        <option value="alto">Alto</option>
+                        <option value="bass">Bass</option>
+                        <option value="robot">Robot</option>
+                        <option value="choir">Choir</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 10px; color: #666;">Vibrato</label>
+                    <input type="range" id="vocalVibrato" min="0" max="100" value="30" style="width: 100%;">
+                </div>
+                <div>
+                    <label style="font-size: 10px; color: #666;">Breathiness</label>
+                    <input type="range" id="vocalBreathiness" min="0" max="100" value="10" style="width: 100%;">
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="vocal-preview-btn" data-word="Yeah" style="flex: 1; background: #111; border: 1px solid #333; color: #888; padding: 8px; border-radius: 4px; cursor: pointer;">Yeah</button>
+                <button class="vocal-preview-btn" data-word="Oh" style="flex: 1; background: #111; border: 1px solid #333; color: #888; padding: 8px; border-radius: 4px; cursor: pointer;">Oh</button>
+                <button class="vocal-preview-btn" data-word="La" style="flex: 1; background: #111; border: 1px solid #333; color: #888; padding: 8px; border-radius: 4px; cursor: pointer;">La</button>
+                <button class="vocal-preview-btn" data-word="Da" style="flex: 1; background: #111; border: 1px solid #333; color: #888; padding: 8px; border-radius: 4px; cursor: pointer;">Da</button>
+                <button class="vocal-preview-btn" data-word="Love" style="flex: 1; background: #111; border: 1px solid #333; color: #888; padding: 8px; border-radius: 4px; cursor: pointer;">Love</button>
+            </div>
+            <button id="vocalSingBtn" style="width: 100%; padding: 15px; background: linear-gradient(90deg, #ff00cc 0%, #ff0099 100%);
+                border: none; border-radius: 8px; color: #fff; font-family: 'JetBrains Mono', monospace;
+                font-size: 14px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">
+                🎤 SING!
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    // Preview buttons
+    dialog.querySelectorAll('.vocal-preview-btn').forEach(btn => {
+        btn.onclick = () => {
+            const word = (btn as HTMLElement).dataset.word || 'Yeah';
+            previewVocalWord(word);
+        };
+    });
+
+    // Sing button
+    dialog.querySelector('#vocalSingBtn').onclick = () => {
+        const lyrics = (dialog.querySelector('#vocalLyricsInput') as HTMLTextAreaElement).value;
+        const voice = (dialog.querySelector('#vocalVoice') as HTMLSelectElement).value;
+        const vibrato = parseInt((dialog.querySelector('#vocalVibrato') as HTMLInputElement).value) / 100;
+        const breathiness = parseInt((dialog.querySelector('#vocalBreathiness') as HTMLInputElement).value) / 100;
+        singVocals(lyrics, voice, vibrato, breathiness);
+    };
+
+    dialog.onclose = () => dialog.remove();
+}
+
+// Phoneme definitions
+const VOCAL_PHONEMES: Record<string, { f1: number; f2: number; f3: number }> = {
+    'a': { f1: 730, f2: 1090, f3: 2440 },
+    'e': { f1: 530, f2: 1840, f3: 2480 },
+    'i': { f1: 270, f2: 2290, f3: 3010 },
+    'o': { f1: 570, f2: 840, f3: 2410 },
+    'u': { f1: 300, f2: 870, f3: 2240 },
+    'æ': { f1: 660, f2: 1720, f3: 2410 },
+    'ʌ': { f1: 680, f2: 1310, f3: 2710 },
+    'ɪ': { f1: 400, f2: 1920, f3: 2560 },
+    'ɛ': { f1: 550, f2: 1770, f3: 2490 },
+};
+
+const WORD_TO_PHONEME: Record<string, string> = {
+    'yeah': 'jɛæ', 'oh': 'oʊ', 'la': 'lɑ', 'da': 'dɑ', 'na': 'nɑ',
+    'ba': 'bɑ', 'ma': 'mɑ', 'love': 'lʌv', 'feel': 'fil', 'night': 'naɪt',
+    'dance': 'dæns', 'music': 'mjuzɪk', 'dream': 'drim', 'fire': 'faɪər'
+};
+
+let vocalAudioContext: AudioContext | null = null;
+
+function previewVocalWord(word: string) {
+    if (!vocalAudioContext) {
+        vocalAudioContext = new AudioContext();
+    }
+
+    const phonemes = WORD_TO_PHONEME[word.toLowerCase()] || 'ɑ';
+    const fundamental = 220; // A3
+
+    phonemes.split('').forEach((phoneme, i) => {
+        const formants = VOCAL_PHONEMES[phoneme] || VOCAL_PHONEMES['ɑ'];
+        if (formants) {
+            synthesizeVocalPhoneme(vocalAudioContext!, fundamental, formants, 0.3, i * 0.15);
+        }
+    });
+}
+
+function singVocals(lyrics: string, voice: string, vibrato: number, breathiness: number) {
+    if (!vocalAudioContext) {
+        vocalAudioContext = new AudioContext();
+    }
+
+    const words = lyrics.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    const voiceShifts: Record<string, number> = {
+        'soprano': 1.5, 'alto': 1.2, 'tenor': 1, 'bass': 0.7, 'robot': 1, 'choir': 1
+    };
+
+    const baseFreq = 220 * (voiceShifts[voice] || 1);
+
+    words.forEach((word, wordIndex) => {
+        const phonemes = WORD_TO_PHONEME[word] || 'ɑ';
+        const wordDuration = 0.4;
+
+        // Simple melody - step up and down
+        const melody = [1, 1.125, 1.25, 1.125, 1][wordIndex % 5];
+
+        phonemes.split('').forEach((phoneme, phonemeIndex) => {
+            const formants = VOCAL_PHONEMES[phoneme] || VOCAL_PHONEMES['ɑ'];
+            const startTime = wordIndex * wordDuration + phonemeIndex * (wordDuration / phonemes.length);
+
+            synthesizeVocalPhoneme(
+                vocalAudioContext!,
+                baseFreq * melody,
+                formants,
+                wordDuration / phonemes.length,
+                startTime,
+                vibrato,
+                breathiness,
+                voice === 'choir'
+            );
+        });
+    });
+
+    if (window.UIController?.toast) {
+        window.UIController.toast(`🎤 Singing ${words.length} words...`);
+    }
+}
+
+function synthesizeVocalPhoneme(
+    ctx: AudioContext,
+    fundamental: number,
+    formants: { f1: number; f2: number; f3: number },
+    duration: number,
+    startTime: number,
+    vibrato: number = 0.3,
+    breathiness: number = 0.1,
+    choir: boolean = false
+) {
+    const now = ctx.currentTime + startTime;
+
+    // Main oscillator
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.value = fundamental;
+
+    // Vibrato
+    const vibratoOsc = ctx.createOscillator();
+    vibratoOsc.type = 'sine';
+    vibratoOsc.frequency.value = 5;
+
+    const vibratoGain = ctx.createGain();
+    vibratoGain.gain.value = fundamental * vibrato * 0.02;
+    vibratoOsc.connect(vibratoGain);
+    vibratoGain.connect(osc.frequency);
+
+    // Formant filters
+    const formant1 = ctx.createBiquadFilter();
+    formant1.type = 'bandpass';
+    formant1.frequency.value = formants.f1;
+    formant1.Q.value = 10;
+
+    const formant2 = ctx.createBiquadFilter();
+    formant2.type = 'bandpass';
+    formant2.frequency.value = formants.f2;
+    formant2.Q.value = 10;
+
+    const formant3 = ctx.createBiquadFilter();
+    formant3.type = 'bandpass';
+    formant3.frequency.value = formants.f3;
+    formant3.Q.value = 8;
+
+    // Gains for each formant
+    const g1 = ctx.createGain(); g1.gain.value = 1;
+    const g2 = ctx.createGain(); g2.gain.value = 0.63;
+    const g3 = ctx.createGain(); g3.gain.value = 0.1;
+
+    osc.connect(formant1);
+    osc.connect(formant2);
+    osc.connect(formant3);
+    formant1.connect(g1);
+    formant2.connect(g2);
+    formant3.connect(g3);
+
+    // Mix
+    const mixGain = ctx.createGain();
+    g1.connect(mixGain);
+    g2.connect(mixGain);
+    g3.connect(mixGain);
+
+    // Envelope
+    const envelope = ctx.createGain();
+    envelope.gain.setValueAtTime(0, now);
+    envelope.gain.linearRampToValueAtTime(0.3, now + 0.03);
+    envelope.gain.setValueAtTime(0.3, now + duration - 0.05);
+    envelope.gain.linearRampToValueAtTime(0, now + duration);
+
+    mixGain.connect(envelope);
+
+    // Breathiness
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.value = breathiness * 0.1;
+
+    const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i++) noiseData[i] = Math.random() * 2 - 1;
+
+    const noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    noiseSource.loop = true;
+    noiseSource.connect(noiseGain);
+    noiseGain.connect(envelope);
+
+    // Output
+    envelope.connect(ctx.destination);
+
+    // Start/stop
+    osc.start(now);
+    osc.stop(now + duration + 0.1);
+    vibratoOsc.start(now);
+    vibratoOsc.stop(now + duration + 0.1);
+    noiseSource.start(now);
+    noiseSource.stop(now + duration + 0.1);
+
+    // Choir effect
+    if (choir) {
+        for (let v = 0; v < 2; v++) {
+            const choirOsc = ctx.createOscillator();
+            choirOsc.type = 'sawtooth';
+            choirOsc.frequency.value = fundamental * (1 + (Math.random() - 0.5) * 0.02);
+
+            const choirGain = ctx.createGain();
+            choirGain.gain.value = 0.15;
+
+            choirOsc.connect(formant1);
+            choirOsc.connect(formant2);
+            choirOsc.connect(formant3);
+            choirGain.connect(envelope);
+
+            choirOsc.start(now);
+            choirOsc.stop(now + duration + 0.1);
+        }
+    }
+}
+
 
