@@ -5932,30 +5932,154 @@ function showSimplePianoRoll() {
 // 808 DRUM PAD - Interactive drum machine interface
 // ============================================================
 let drum808PadContainer = null;
-let drum808Instance = null;
+let drum808Synths = null;
+
+// Create 808-style drum synthesizers using Tone.js
+function create808Drums() {
+    if (drum808Synths) return drum808Synths;
+
+    // Make sure Tone is started
+    if (Tone.context.state !== 'running') {
+        Tone.start();
+    }
+
+    drum808Synths = {
+        // KICK - Famous 808 sine with pitch envelope
+        kick: new Tone.MembraneSynth({
+            pitchDecay: 0.5,
+            octaves: 4,
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.001, decay: 0.8, sustain: 0, release: 0.2 }
+        }).toDestination(),
+
+        // SNARE - Noise + tone
+        snare: new Tone.NoiseSynth({
+            noise: { type: 'white' },
+            envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.1 }
+        }).toDestination(),
+
+        // CLAP - Filtered noise
+        clap: new Tone.NoiseSynth({
+            noise: { type: 'white' },
+            envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.1 }
+        }).connect(new Tone.Filter(2000, 'bandpass').toDestination()),
+
+        // HI-HAT CLOSED
+        hhClosed: new Tone.MetalSynth({
+            frequency: 250,
+            envelope: { attack: 0.001, decay: 0.05, release: 0.01 },
+            harmonicity: 5.1,
+            modulationIndex: 32,
+            resonance: 4000,
+            octaves: 1.5
+        }).toDestination(),
+
+        // HI-HAT OPEN
+        hhOpen: new Tone.MetalSynth({
+            frequency: 250,
+            envelope: { attack: 0.001, decay: 0.4, release: 0.1 },
+            harmonicity: 5.1,
+            modulationIndex: 32,
+            resonance: 4000,
+            octaves: 1.5
+        }).toDestination(),
+
+        // TOMS - Using MembraneSynth
+        tomLow: new Tone.MembraneSynth({
+            pitchDecay: 0.3,
+            octaves: 2,
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.001, decay: 0.5, sustain: 0, release: 0.2 }
+        }).toDestination(),
+
+        tomMid: new Tone.MembraneSynth({
+            pitchDecay: 0.3,
+            octaves: 2,
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.001, decay: 0.4, sustain: 0, release: 0.15 }
+        }).toDestination(),
+
+        tomHi: new Tone.MembraneSynth({
+            pitchDecay: 0.2,
+            octaves: 2,
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.1 }
+        }).toDestination(),
+
+        // COWBELL - Two oscillators
+        cowbell: new Tone.MetalSynth({
+            frequency: 587,
+            envelope: { attack: 0.001, decay: 0.15, release: 0.05 },
+            harmonicity: 1.5,
+            modulationIndex: 10,
+            resonance: 2000,
+            octaves: 1
+        }).toDestination(),
+
+        // RIMSHOT
+        rim: new Tone.MembraneSynth({
+            pitchDecay: 0.05,
+            octaves: 1,
+            oscillator: { type: 'triangle' },
+            envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.02 }
+        }).toDestination(),
+
+        // CLAVE
+        clave: new Tone.Synth({
+            oscillator: { type: 'square' },
+            envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.01 }
+        }).toDestination(),
+
+        // MARACAS
+        maracas: new Tone.NoiseSynth({
+            noise: { type: 'white' },
+            envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.01 }
+        }).toDestination(),
+    };
+
+    // Set volumes
+    drum808Synths.kick.volume.value = -3;
+    drum808Synths.snare.volume.value = -6;
+    drum808Synths.clap.volume.value = -6;
+    drum808Synths.hhClosed.volume.value = -12;
+    drum808Synths.hhOpen.volume.value = -10;
+    drum808Synths.tomLow.volume.value = -5;
+    drum808Synths.tomMid.volume.value = -5;
+    drum808Synths.tomHi.volume.value = -5;
+    drum808Synths.cowbell.volume.value = -8;
+    drum808Synths.rim.volume.value = -8;
+    drum808Synths.clave.volume.value = -10;
+    drum808Synths.maracas.volume.value = -15;
+
+    return drum808Synths;
+}
 
 window.openDrum808 = async function() {
     // Toggle if already open
     if (drum808PadContainer) {
+        drum808PadContainer.close();
         drum808PadContainer.remove();
         drum808PadContainer = null;
         return;
     }
 
+    // Create synths
+    const synths = create808Drums();
+
     // Create drum pads
     const DRUM_CONFIG = [
-        { note: 36, name: 'KICK', color: '#00ff94', key: '1' },
-        { note: 38, name: 'SNARE', color: '#f59e0b', key: '2' },
-        { note: 39, name: 'CLAP', color: '#ff00cc', key: '3' },
-        { note: 42, name: 'HH CLSD', color: '#00e5ff', key: '4' },
-        { note: 46, name: 'HH OPEN', color: '#7c3aed', key: '5' },
-        { note: 41, name: 'TOM LO', color: '#ff0055', key: 'Q' },
-        { note: 45, name: 'TOM MID', color: '#5865F2', key: 'W' },
-        { note: 48, name: 'TOM HI', color: '#00ccff', key: 'E' },
-        { note: 56, name: 'COWBELL', color: '#f59e0b', key: 'R' },
-        { note: 37, name: 'RIM', color: '#888', key: 'T' },
-        { note: 75, name: 'CLAVE', color: '#aaa', key: 'Z' },
-        { note: 70, name: 'MARACS', color: '#666', key: 'U' },
+        { note: 36, name: 'KICK', color: '#00ff94', key: '1', synth: 'kick', notePlay: 'C1' },
+        { note: 38, name: 'SNARE', color: '#f59e0b', key: '2', synth: 'snare', notePlay: null },
+        { note: 39, name: 'CLAP', color: '#ff00cc', key: '3', synth: 'clap', notePlay: null },
+        { note: 42, name: 'HH CLSD', color: '#00e5ff', key: '4', synth: 'hhClosed', notePlay: null },
+        { note: 46, name: 'HH OPEN', color: '#7c3aed', key: '5', synth: 'hhOpen', notePlay: null },
+        { note: 41, name: 'TOM LO', color: '#ff0055', key: 'Q', synth: 'tomLow', notePlay: 'C2' },
+        { note: 45, name: 'TOM MID', color: '#5865F2', key: 'W', synth: 'tomMid', notePlay: 'G2' },
+        { note: 48, name: 'TOM HI', color: '#00ccff', key: 'E', synth: 'tomHi', notePlay: 'C3' },
+        { note: 56, name: 'COWBELL', color: '#f59e0b', key: 'R', synth: 'cowbell', notePlay: null },
+        { note: 37, name: 'RIM', color: '#888', key: 'T', synth: 'rim', notePlay: 'C4' },
+        { note: 75, name: 'CLAVE', color: '#aaa', key: 'Z', synth: 'clave', notePlay: 'C5' },
+        { note: 70, name: 'MARACS', color: '#666', key: 'U', synth: 'maracas', notePlay: null },
     ];
 
     // Create as DIALOG for full visibility
@@ -5978,7 +6102,7 @@ window.openDrum808 = async function() {
                 <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 800; color: #00ff94; text-shadow: 0 0 15px rgba(0,255,148,0.5);">
                     🥁 TR-808 DRUM MACHINE
                 </div>
-                <button onclick="this.closest('dialog').close(); document.getElementById('drum808Dialog')?.remove(); window.drum808PadContainer = null;"
+                <button id="close808"
                     style="background: transparent; border: 1px solid #444; color: #666; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 16px;">
                     ✕
                 </button>
@@ -6077,16 +6201,19 @@ window.openDrum808 = async function() {
         `;
 
         const hitPad = () => {
-            // Play sound via existing drum system
-            if (window.engine && window.engine.drums) {
-                const drumNotes = {36:0, 38:1, 42:2, 39:3, 46:4};
-                const idx = drumNotes[config.note];
-                if (idx !== undefined && window.engine.drums[idx]) {
-                    window.engine.drums[idx].start();
+            // Ensure Tone context is running
+            if (Tone.context.state !== 'running') {
+                Tone.start();
+            }
+
+            // Play sound using the synth
+            const synth = synths[config.synth];
+            if (synth) {
+                if (config.notePlay) {
+                    synth.triggerAttackRelease(config.notePlay, '8n', Tone.now(), 0.9);
+                } else {
+                    synth.triggerAttackRelease('8n', Tone.now(), 0.9);
                 }
-            } else if (window.seq && window.seq.playNote) {
-                // Fallback via sequencer
-                window.seq.playNote(config.note, 0.9);
             }
 
             // Visual feedback
@@ -6108,12 +6235,36 @@ window.openDrum808 = async function() {
         pads.set(config.note, pad);
     });
 
+    // Close button
+    dialog.querySelector('#close808').addEventListener('click', () => {
+        dialog.close();
+        dialog.remove();
+        drum808PadContainer = null;
+    });
+
     // Preset buttons
     dialog.querySelectorAll('.preset-btn-808').forEach(btn => {
         btn.addEventListener('click', () => {
             dialog.querySelectorAll('.preset-btn-808').forEach(b => b.style.borderColor = '#333');
-            (btn as HTMLElement).style.borderColor = '#00ff94';
-            console.log(`[808] Preset: ${(btn as HTMLElement).dataset.preset}`);
+            (btn).style.borderColor = '#00ff94';
+
+            const preset = btn.dataset.preset;
+            console.log(`[808] Preset: ${preset}`);
+
+            // Adjust kick based on preset
+            if (preset === 'trap') {
+                synths.kick.pitchDecay = 0.6;
+                synths.kick.envelope.decay = 1.2;
+            } else if (preset === 'hiphop') {
+                synths.kick.pitchDecay = 0.5;
+                synths.kick.envelope.decay = 0.9;
+            } else if (preset === 'house') {
+                synths.kick.pitchDecay = 0.3;
+                synths.kick.envelope.decay = 0.5;
+            } else {
+                synths.kick.pitchDecay = 0.5;
+                synths.kick.envelope.decay = 0.8;
+            }
         });
     });
 
@@ -6125,7 +6276,7 @@ window.openDrum808 = async function() {
             e.preventDefault();
             const pad = pads.get(config.note);
             if (pad) {
-                (pad as HTMLElement).click();
+                pad.click();
             }
         }
     };
@@ -6135,7 +6286,6 @@ window.openDrum808 = async function() {
     // Cleanup on close
     dialog.addEventListener('close', () => {
         document.removeEventListener('keydown', keyHandler);
-        dialog.remove();
         drum808PadContainer = null;
     });
 
