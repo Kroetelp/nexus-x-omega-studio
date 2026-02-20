@@ -5942,42 +5942,6 @@ window.openDrum808 = async function() {
         return;
     }
 
-    // Create container in the deck (right sidebar)
-    const deck = document.querySelector('.deck');
-    if (!deck) {
-        console.error('[808] Deck not found');
-        return;
-    }
-
-    // Create the 808 pad UI
-    drum808PadContainer = document.createElement('div');
-    drum808PadContainer.className = 'drum-808-wrapper';
-    drum808PadContainer.innerHTML = `
-        <style>
-            .drum-808-wrapper {
-                position: relative;
-            }
-            .drum-808-close {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                background: transparent;
-                border: 1px solid #444;
-                color: #666;
-                width: 24px;
-                height: 24px;
-                border-radius: 4px;
-                cursor: pointer;
-                z-index: 10;
-            }
-            .drum-808-close:hover {
-                color: #ff0055;
-                border-color: #ff0055;
-            }
-        </style>
-        <button class="drum-808-close" onclick="this.parentElement.remove(); window.drum808PadContainer = null;">✕</button>
-    `;
-
     // Create drum pads
     const DRUM_CONFIG = [
         { note: 36, name: 'KICK', color: '#00ff94', key: '1' },
@@ -5994,162 +5958,144 @@ window.openDrum808 = async function() {
         { note: 70, name: 'MARACS', color: '#666', key: 'U' },
     ];
 
-    const padsDiv = document.createElement('div');
-    padsDiv.innerHTML = `
+    // Create as DIALOG for full visibility
+    const dialog = document.createElement('dialog');
+    dialog.id = 'drum808Dialog';
+    dialog.style.cssText = `
+        width: 600px;
+        max-width: 95vw;
+        background: radial-gradient(circle at center, rgba(17,17,17,0.98) 0%, rgba(5,5,5,0.99) 100%);
+        border: 1px solid #333;
+        border-radius: 16px;
+        padding: 0;
+        color: #fff;
+        z-index: 10000;
+    `;
+
+    dialog.innerHTML = `
+        <div style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 800; color: #00ff94; text-shadow: 0 0 15px rgba(0,255,148,0.5);">
+                    🥁 TR-808 DRUM MACHINE
+                </div>
+                <button onclick="this.closest('dialog').close(); document.getElementById('drum808Dialog')?.remove(); window.drum808PadContainer = null;"
+                    style="background: transparent; border: 1px solid #444; color: #666; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    ✕
+                </button>
+            </div>
+            <div id="drumPads808" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;"></div>
+            <div style="margin-top: 15px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                <button class="preset-btn-808" data-preset="classic">CLASSIC</button>
+                <button class="preset-btn-808" data-preset="hiphop">HIPHOP</button>
+                <button class="preset-btn-808" data-preset="trap">TRAP</button>
+                <button class="preset-btn-808" data-preset="house">HOUSE</button>
+                <button class="preset-btn-808" data-preset="techno">TECHNO</button>
+            </div>
+            <div style="margin-top: 15px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #555; text-align: center;">
+                🎹 Keys: 1-5, Q-R, Z-U &nbsp;|&nbsp; 🖱️ Click pads to play
+            </div>
+        </div>
         <style>
-            .drum-808-panel {
-                background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
-                border: 1px solid #333;
-                border-radius: 12px;
-                padding: 15px;
-                margin-bottom: 10px;
-            }
-            .drum-808-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 15px;
-                padding-bottom: 10px;
-                border-bottom: 1px solid #333;
-            }
-            .drum-808-title {
-                font-family: 'JetBrains Mono', monospace;
-                font-size: 14px;
-                font-weight: 800;
-                color: #00ff94;
-                text-shadow: 0 0 10px rgba(0,255,148,0.3);
-            }
-            .drum-808-pads {
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                gap: 8px;
-            }
-            .drum-pad {
+            .drum-pad-808 {
                 aspect-ratio: 1;
-                background: #1a1a1a;
+                background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
                 border: 2px solid #333;
-                border-radius: 8px;
+                border-radius: 12px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                transition: all 0.1s;
+                transition: all 0.1s ease;
                 user-select: none;
                 position: relative;
                 overflow: hidden;
+                min-height: 80px;
             }
-            .drum-pad:hover {
+            .drum-pad-808:hover {
+                transform: scale(1.05);
                 border-color: #555;
-                transform: scale(1.02);
             }
-            .drum-pad:active, .drum-pad.hit {
+            .drum-pad-808:active, .drum-pad-808.hit {
                 transform: scale(0.95);
             }
-            .drum-pad.hit::after {
+            .drum-pad-808.hit::after {
                 content: '';
                 position: absolute;
                 inset: 0;
-                background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
-                animation: padFlash 0.15s ease-out;
+                background: radial-gradient(circle, rgba(255,255,255,0.5) 0%, transparent 70%);
+                animation: padFlash808 0.2s ease-out;
             }
-            @keyframes padFlash {
-                from { opacity: 1; }
-                to { opacity: 0; }
+            @keyframes padFlash808 {
+                0% { opacity: 1; }
+                100% { opacity: 0; }
             }
-            .drum-pad-name {
+            .drum-pad-name-808 {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 12px;
+                font-weight: 700;
+                text-shadow: 0 0 10px currentColor;
+                z-index: 1;
+            }
+            .drum-pad-key-808 {
                 font-family: 'JetBrains Mono', monospace;
                 font-size: 10px;
-                font-weight: 700;
-                color: #fff;
-                text-shadow: 0 0 5px currentColor;
-            }
-            .drum-pad-key {
-                font-family: 'JetBrains Mono', monospace;
-                font-size: 8px;
                 color: #666;
-                margin-top: 2px;
+                margin-top: 4px;
+                z-index: 1;
             }
-            .drum-808-presets {
-                display: flex;
-                gap: 5px;
-                margin-top: 12px;
-                flex-wrap: wrap;
-            }
-            .preset-btn {
+            .preset-btn-808 {
                 background: #1a1a1a;
                 border: 1px solid #333;
                 color: #888;
-                padding: 4px 8px;
-                border-radius: 4px;
+                padding: 8px 16px;
+                border-radius: 6px;
                 font-family: 'JetBrains Mono', monospace;
-                font-size: 9px;
+                font-size: 11px;
                 cursor: pointer;
                 transition: all 0.15s;
             }
-            .preset-btn:hover {
+            .preset-btn-808:hover {
                 border-color: #00ff94;
                 color: #00ff94;
-            }
-            .drum-808-info {
-                margin-top: 10px;
-                font-family: 'JetBrains Mono', monospace;
-                font-size: 9px;
-                color: #555;
-                text-align: center;
+                box-shadow: 0 0 10px rgba(0,255,148,0.2);
             }
         </style>
-        <div class="drum-808-panel">
-            <div class="drum-808-header">
-                <div class="drum-808-title">🥁 TR-808 DRUMS</div>
-            </div>
-            <div class="drum-808-pads" id="drumPads808"></div>
-            <div class="drum-808-presets" id="presetBtns808"></div>
-            <div class="drum-808-info">Keys: 1-5, Q-R, Z-U | Click pads to play</div>
-        </div>
     `;
 
     // Create pads
-    const padsContainer = padsDiv.querySelector('#drumPads808');
+    const padsContainer = dialog.querySelector('#drumPads808');
     const pads = new Map();
 
     DRUM_CONFIG.forEach(config => {
         const pad = document.createElement('div');
-        pad.className = 'drum-pad';
+        pad.className = 'drum-pad-808';
         pad.style.borderColor = config.color;
         pad.innerHTML = `
-            <span class="drum-pad-name" style="color: ${config.color}">${config.name}</span>
-            <span class="drum-pad-key">[${config.key}]</span>
+            <span class="drum-pad-name-808" style="color: ${config.color}">${config.name}</span>
+            <span class="drum-pad-key-808">[${config.key}]</span>
         `;
 
         const hitPad = () => {
-            // Play sound via worklet
+            // Play sound via existing drum system
             if (window.engine && window.engine.drums) {
-                // Trigger via existing drum system
                 const drumNotes = {36:0, 38:1, 42:2, 39:3, 46:4};
                 const idx = drumNotes[config.note];
-                if (idx !== undefined) {
-                    window.engine.drums[idx]?.start();
+                if (idx !== undefined && window.engine.drums[idx]) {
+                    window.engine.drums[idx].start();
                 }
-            } else if (window.bitcrusherNode) {
-                // Send note directly to worklet
-                window.bitcrusherNode.port.postMessage({
-                    type: 1, // NOTE_ON
-                    instrumentId: 100, // 808 drum id
-                    data1: config.note,
-                    data2: 0.9
-                });
+            } else if (window.seq && window.seq.playNote) {
+                // Fallback via sequencer
+                window.seq.playNote(config.note, 0.9);
             }
 
             // Visual feedback
             pad.classList.add('hit');
-            pad.style.boxShadow = `0 0 30px ${config.color}, inset 0 0 20px ${config.color}`;
+            pad.style.boxShadow = `0 0 40px ${config.color}, inset 0 0 30px ${config.color}`;
             setTimeout(() => {
                 pad.classList.remove('hit');
                 pad.style.boxShadow = '';
-            }, 150);
-
-            console.log(`[808] ${config.name} (note ${config.note})`);
+            }, 200);
         };
 
         pad.addEventListener('mousedown', hitPad);
@@ -6162,40 +6108,40 @@ window.openDrum808 = async function() {
         pads.set(config.note, pad);
     });
 
-    // Create preset buttons
-    const presetsContainer = padsDiv.querySelector('#presetBtns808');
-    const presets = ['CLASSIC', 'HIPHOP', 'TRAP', 'HOUSE', 'TECHNO'];
-    presets.forEach(preset => {
-        const btn = document.createElement('button');
-        btn.className = 'preset-btn';
-        btn.textContent = preset;
-        btn.onclick = () => {
-            console.log(`[808] Preset: ${preset}`);
-            // Update kick parameters based on preset
-            if (preset === 'TRAP') {
-                console.log('[808] Deep trap kick: tune=2, decay=1.8s');
-            } else if (preset === 'HIPHOP') {
-                console.log('[808] Hip-hop kick: tune=3, decay=1.5s');
-            }
-        };
-        presetsContainer.appendChild(btn);
+    // Preset buttons
+    dialog.querySelectorAll('.preset-btn-808').forEach(btn => {
+        btn.addEventListener('click', () => {
+            dialog.querySelectorAll('.preset-btn-808').forEach(b => b.style.borderColor = '#333');
+            (btn as HTMLElement).style.borderColor = '#00ff94';
+            console.log(`[808] Preset: ${(btn as HTMLElement).dataset.preset}`);
+        });
     });
-
-    drum808PadContainer.appendChild(padsDiv);
-    deck.insertBefore(drum808PadContainer, deck.firstChild);
 
     // Keyboard handler
     const keyHandler = (e) => {
+        if (!document.getElementById('drum808Dialog')) return;
         const config = DRUM_CONFIG.find(c => c.key.toLowerCase() === e.key.toLowerCase());
         if (config) {
             e.preventDefault();
             const pad = pads.get(config.note);
-            if (pad) pad.click();
+            if (pad) {
+                (pad as HTMLElement).click();
+            }
         }
     };
 
     document.addEventListener('keydown', keyHandler);
-    drum808PadContainer.dataset.keyHandler = 'true';
+
+    // Cleanup on close
+    dialog.addEventListener('close', () => {
+        document.removeEventListener('keydown', keyHandler);
+        dialog.remove();
+        drum808PadContainer = null;
+    });
+
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    drum808PadContainer = dialog;
 
     console.log('[808] Drum Pad opened - use keys 1-5, Q-R, Z-U or click pads!');
 };
