@@ -1,28 +1,24 @@
 /**
  * NEXUS-X DSP ENGINE v5.0 - Modular AudioWorklet
  *
- * This processor bridges the TypeScript InstrumentRegistry
- * with the C++ WASM DspEngine.
+ * Supports both WASM and JS Fallback modes.
+ * WASM is preferred for performance, JS fallback for development.
  *
  * Message Flow:
- * TypeScript -> InstrumentRegistry -> WorkletMessage -> processor.js -> WASM
+ * TypeScript -> InstrumentRegistry -> WorkletMessage -> processor.js -> WASM/JS
  */
 
 // ============================================================
-// MESSAGE CONSTANTS (sync mit TypeScript types.ts)
+// MESSAGE CONSTANTS
 // ============================================================
 const MSG = {
-    // Main Thread -> Worklet
     PARAM_CHANGE: 0,
     NOTE_ON: 1,
     NOTE_OFF: 2,
     RESET: 3,
     REGISTER_INSTRUMENT: 4,
     LOAD_WASM: 5,
-
-    // Worklet -> Main Thread
     METER_UPDATE: 100,
-    PEAK_DETECTED: 101,
     INSTRUMENT_READY: 102,
     WASM_READY: 103,
 };
@@ -35,289 +31,433 @@ const INSTRUMENT_TYPE = {
 };
 
 // ============================================================
-// DSP ENGINE WORKLET
+// JS FALLBACK IMPLEMENTATION (Embedded for development)
 // ============================================================
+
+class Voice {
+    constructor() {
+        this.phase = 0;
+        this.frequency = 440;
+        this.velocity = 0;
+        this.active = false;
+        this.note = 0;
+        this.attack = 0.01;
+        this.decay = 0.1;
+        this.sustain = 0.7;
+        this.release = 0.3;
+        this.envLevel = 0;
+        this.envState = 'idle';
+        this.filterCutoff = 2000;
+        this.filterPrev = 0;
+        this.oscType = 1;
+    }
+
+    noteOn(note, velocity) {
+        this.note = note;
+        this.velocity = velocity;
+        this.frequency = 440 * Math.pow(2, (note - 69) / 12);
+        this.phase = 0;
+        this.envState = 'attack';
+        this.active = true;
+    }
+
+    noteOff() { this.envState = 'release'; }
+
+    process(sr) {
+        if (!this.active) return 0;
+        const dt = 1 / sr;
+        switch (this.envState) {
+            case 'attack':
+                this.envLevel += dt / this.attack;
+                if (this.envLevel >= 1) { this.envLevel = 1; this.envState = 'decay'; }
+                break;
+            case 'decay':
+                this.envLevel -= (1 - this.sustain) * (dt / this.decay);
+                if (this.envLevel <= this.sustain) { this.envLevel = this.sustain; this.envState = 'sustain'; }
+                break;
+            case 'sustain':
+                break;
+            case 'release':
+                this.envLevel -= this.sustain * (dt / this.release);
+                if (this.envLevel <= 0) { this.envLevel = 0; this.envState = 'idle'; this.active = false; }
+                break;
+            default:
+                this.active = false;
+                return 0;
+        }
+
+        let sample = 0;
+        const phaseInc = this.frequency / sr;
+        switch (this.oscType) {
+            case 0: sample = Math.sin(2 * Math.PI * this.phase); break;
+            case 1: sample = 2 * this.phase - 1; break;
+            case 2: sample = this.phase < 0.5 ? 1 : -1; break;
+            case 3: sample = 4 * Math.abs(this.phase - 0.5) - 1; break;
+        }
+        this.phase += phaseInc;
+        if (this.phase >= 1) this.phase -= 1;
+
+        const rc = 1 / (2 * Math.PI * this.filterCutoff);
+        const alpha = dt / (rc + dt);
+        sample = this.filterPrev + alpha * (sample - this.filterPrev);
+        this.filterPrev = sample;
+
+        return sample * this.envLevel * this.velocity;
+    }
+}
+
+class JsSynth {
+    constructor(id, polyphony = 8) {
+        this.id = id;
+        this.voices = [];
+        this.masterVol = 0.8;
+        this.oscType = 1;
+        this.filterCutoff = 2000;
+        this.attack = 0.01;
+        this.decay = 0.1;
+        this.sustain = 0.7;
+        this.release = 0.3;
+        for (let i = 0; i < polyphony; i++) this.voices.push(new Voice());
+    }
+
+    setParameter(p, v) {
+        switch (p) {
+            case 0: this.oscType = Math.floor(v); break;
+            case 11: this.filterCutoff = v; break;
+            case 20: this.attack = v; break;
+            case 21: this.decay = v; break;
+            case 22: this.sustain = v; break;
+            case 23: this.release = v; break;
+            case 60: this.masterVol = v; break;
+        }
+    }
+
+    noteOn(note, vel) {
+        for (const v of this.voices) {
+            if (!v.active) {
+                v.oscType = this.oscType;
+                v.filterCutoff = this.filterCutoff;
+                v.attack = this.attack;
+                v.decay = this.decay;
+                v.sustain = this.sustain;
+                v.release = this.release;
+                v.noteOn(note, vel);
+                return;
+            }
+        }
+    }
+
+    noteOff(note) { for (const v of this.voices) if (v.active && v.note === note) v.noteOff(); }
+
+    process(buf, n, sr) {
+        for (let i = 0; i < n; i++) {
+            let s = 0;
+            for (const v of this.voices) if (v.active) s += v.process(sr);
+            s *= this.masterVol;
+            buf[i * 2] += s;
+            buf[i * 2 + 1] += s;
+        }
+    }
+
+    reset() { for (const v of this.voices) v.active = false; }
+}
+
+class JsDrum {
+    constructor(id) {
+        this.id = id;
+        this.masterVol = 0.8;
+        this.active = false;
+        this.level = 0;
+        this.decay = 0.2;
+        this.phase = 0;
+        this.pitch = 50;
+    }
+
+    setParameter(p, v) {
+        if (p === 0) this.pitch = v;
+        if (p === 1) this.decay = v;
+        if (p === 60) this.masterVol = v;
+    }
+
+    noteOn(n, vel) { this.level = vel; this.active = true; this.phase = 0; }
+    noteOff() {}
+
+    process(buf, n, sr) {
+        if (!this.active) return;
+        const dt = 1 / sr;
+        for (let i = 0; i < n; i++) {
+            this.level -= dt / this.decay;
+            if (this.level <= 0) { this.level = 0; this.active = false; return; }
+            const freq = this.pitch * (1 + (1 - this.level) * 2);
+            this.phase += freq / sr;
+            if (this.phase >= 1) this.phase -= 1;
+            const s = Math.sin(2 * Math.PI * this.phase) * this.level * this.masterVol;
+            buf[i * 2] += s;
+            buf[i * 2 + 1] += s;
+        }
+    }
+
+    reset() { this.active = false; this.level = 0; }
+}
+
+class JsFx {
+    constructor(id) { this.id = id; this.masterVol = 0.8; }
+    setParameter(p, v) { if (p === 70) this.masterVol = v; }
+    process(buf, n, sr) {
+        for (let i = 0; i < n; i++) {
+            buf[i * 2] *= this.masterVol;
+            buf[i * 2 + 1] *= this.masterVol;
+            buf[i * 2] = Math.max(-0.99, Math.min(0.99, buf[i * 2]));
+            buf[i * 2 + 1] = Math.max(-0.99, Math.min(0.99, buf[i * 2 + 1]));
+        }
+    }
+    reset() {}
+}
+
+class JsEngine {
+    constructor() {
+        this.sampleRate = 44100;
+        this.instruments = new Map();
+        this.masterVol = 0.8;
+    }
+
+    initialize(sr) { this.sampleRate = sr; }
+    register(id, type, poly) {
+        let inst;
+        switch (type) {
+            case 0: inst = new JsSynth(id, poly); break;
+            case 1: inst = new JsDrum(id); break;
+            case 2: inst = new JsFx(id); break;
+            default: return false;
+        }
+        this.instruments.set(id, inst);
+        return true;
+    }
+    setParameter(id, p, v) { this.instruments.get(id)?.setParameter(p, v); }
+    noteOn(id, n, v) { this.instruments.get(id)?.noteOn(n, v); }
+    noteOff(id, n) { this.instruments.get(id)?.noteOff(n); }
+    reset(id) { this.instruments.get(id)?.reset(); }
+    process(buf, n) { for (const i of this.instruments.values()) i.process(buf, n, this.sampleRate); }
+}
+
+// ============================================================
+// AUDIO WORKLET PROCESSOR
+// ============================================================
+
 class NexusDspEngine extends AudioWorkletProcessor {
     constructor() {
         super();
+
+        // === Mode: 'wasm' or 'js' ===
+        this.mode = 'js';
+
+        // === JS Fallback Engine ===
+        this.jsEngine = new JsEngine();
+        this.jsEngine.initialize(sampleRate);
 
         // === WASM State ===
         this.wasmInstance = null;
         this.wasmExports = null;
         this.wasmMemory = null;
-
-        // === Function pointers (cached for performance) ===
-        this.fnInitialize = null;
-        this.fnGetInputBuffer = null;
-        this.fnGetOutputBuffer = null;
         this.fnProcess = null;
-        this.fnHandleMessage = null;
-        this.fnRegisterInstrument = null;
         this.fnSetParameter = null;
         this.fnNoteOn = null;
         this.fnNoteOff = null;
-        this.fnSetMasterVolume = null;
+        this.fnRegisterInstrument = null;
+        this.inputBufferOffset = 0;
+        this.outputBufferOffset = 0;
 
-        // === Instrument Registry (local tracking) ===
+        // === Instrument Registry ===
         this.registeredInstruments = new Map();
 
-        // === Metering State ===
+        // === Metering ===
         this.meterPeakL = 0;
         this.meterPeakR = 0;
         this.meterFrameCount = 0;
-        this.METER_INTERVAL = 4096; // ~93ms at 44.1kHz
-
-        // === Buffer offsets ===
-        this.inputBufferOffset = 0;
-        this.outputBufferOffset = 0;
+        this.METER_INTERVAL = 4096;
 
         // === Message Handler ===
         this.port.onmessage = (e) => this.handleMessage(e.data);
 
-        console.log('[Worklet] NexusDspEngine v5.0 initialized');
+        console.log('[Worklet] NexusDspEngine v5.0 initialized (JS Fallback mode)');
+
+        // Signal ready
+        this.port.postMessage({ type: MSG.WASM_READY, mode: 'js' });
     }
 
-    // ============================================================
-    // MESSAGE HANDLING
-    // ============================================================
     handleMessage(msg) {
-        // Validate message structure
-        if (typeof msg.type !== 'number') {
-            console.warn('[Worklet] Invalid message:', msg);
-            return;
-        }
+        if (typeof msg.type !== 'number') return;
 
         switch (msg.type) {
             case MSG.LOAD_WASM:
                 this.loadWasm(msg.wasmModule);
                 break;
-
             case MSG.REGISTER_INSTRUMENT:
                 this.registerInstrument(msg.instrumentId, msg.data1, msg.data2);
                 break;
-
             case MSG.PARAM_CHANGE:
                 this.routeParamChange(msg.instrumentId, msg.data1, msg.data2);
                 break;
-
             case MSG.NOTE_ON:
                 this.routeNoteOn(msg.instrumentId, msg.data1, msg.data2);
                 break;
-
             case MSG.NOTE_OFF:
                 this.routeNoteOff(msg.instrumentId, msg.data1);
                 break;
-
             case MSG.RESET:
                 this.resetInstrument(msg.instrumentId);
                 break;
-
-            default:
-                console.warn('[Worklet] Unknown message type:', msg.type);
         }
     }
 
-    // ============================================================
-    // WASM LOADING
-    // ============================================================
     async loadWasm(wasmModule) {
         try {
-            const instance = await WebAssembly.instantiate(wasmModule, {
-                env: {
-                    // Import functions if needed by WASM
-                    memory: new WebAssembly.Memory({ initial: 256, maximum: 256 }),
-                }
-            });
-
+            const instance = await WebAssembly.instantiate(wasmModule, { env: {} });
             this.wasmInstance = instance.exports;
             this.wasmExports = instance.exports;
             this.wasmMemory = new Float32Array(this.wasmExports.memory.buffer);
 
-            // Cache function pointers
-            this.fnInitialize = this.wasmExports.initialize;
-            this.fnGetInputBuffer = this.wasmExports.getInputBuffer;
-            this.fnGetOutputBuffer = this.wasmExports.getOutputBuffer;
             this.fnProcess = this.wasmExports.process;
-            this.fnHandleMessage = this.wasmExports.handleMessage;
-            this.fnRegisterInstrument = this.wasmExports.registerInstrument;
             this.fnSetParameter = this.wasmExports.setParameter;
             this.fnNoteOn = this.wasmExports.noteOn;
             this.fnNoteOff = this.wasmExports.noteOff;
-            this.fnSetMasterVolume = this.wasmExports.setMasterVolume;
+            this.fnRegisterInstrument = this.wasmExports.registerInstrument;
 
-            // Initialize WASM engine
-            if (this.fnInitialize) {
-                this.fnInitialize(sampleRate);
-            }
+            if (this.wasmExports.initialize) this.wasmExports.initialize(sampleRate);
 
-            // Get buffer offsets
-            if (this.fnGetInputBuffer) {
-                this.inputBufferOffset = this.fnGetInputBuffer() / 4; // Convert to float offset
-            }
-            if (this.fnGetOutputBuffer) {
-                this.outputBufferOffset = this.fnGetOutputBuffer() / 4;
-            }
+            this.inputBufferOffset = (this.wasmExports.getInputBuffer?.() || 0) / 4;
+            this.outputBufferOffset = (this.wasmExports.getOutputBuffer?.() || 0) / 4;
 
-            console.log('[Worklet] WASM Engine v5.0 loaded successfully');
-            console.log(`[Worklet] Sample rate: ${sampleRate}Hz`);
-            console.log(`[Worklet] Buffer offsets: in=${this.inputBufferOffset}, out=${this.outputBufferOffset}`);
+            this.mode = 'wasm';
+            console.log('[Worklet] WASM loaded, switching to WASM mode');
 
-            // Signal ready to main thread
-            this.port.postMessage({ type: MSG.WASM_READY });
-
-        } catch (err) {
-            console.error('[Worklet] WASM load failed:', err);
-            this.wasmInstance = null;
-        }
-    }
-
-    // ============================================================
-    // INSTRUMENT MANAGEMENT
-    // ============================================================
-    registerInstrument(id, type, polyphony) {
-        // Local tracking
-        this.registeredInstruments.set(id, {
-            type: type,
-            polyphony: polyphony,
-            enabled: true,
-        });
-
-        // Forward to WASM
-        if (this.wasmInstance && this.fnRegisterInstrument) {
-            this.fnRegisterInstrument(id, type, polyphony);
-        }
-
-        console.log(`[Worklet] Registered instrument ${id} (type=${type}, poly=${polyphony})`);
-
-        // Confirm to main thread
-        this.port.postMessage({
-            type: MSG.INSTRUMENT_READY,
-            instrumentId: id,
-        });
-    }
-
-    // ============================================================
-    // PARAMETER ROUTING
-    // ============================================================
-    routeParamChange(instrumentId, paramId, value) {
-        // Validate
-        if (!isFinite(value)) {
-            console.warn(`[Worklet] Non-finite value for param ${paramId}`);
-            return;
-        }
-
-        // Safety clamp
-        const safeValue = Math.max(-1000000, Math.min(1000000, value));
-
-        // Forward to WASM
-        if (this.wasmInstance && this.fnSetParameter) {
-            this.fnSetParameter(instrumentId, paramId, safeValue);
-        }
-    }
-
-    // ============================================================
-    // NOTE ROUTING
-    // ============================================================
-    routeNoteOn(instrumentId, note, velocity) {
-        // Validate
-        const safeNote = Math.max(0, Math.min(127, Math.floor(note)));
-        const safeVelocity = Math.max(0, Math.min(1, velocity));
-
-        // Forward to WASM
-        if (this.wasmInstance && this.fnNoteOn) {
-            this.fnNoteOn(instrumentId, safeNote, safeVelocity);
-        }
-    }
-
-    routeNoteOff(instrumentId, note) {
-        const safeNote = Math.max(0, Math.min(127, Math.floor(note)));
-
-        if (this.wasmInstance && this.fnNoteOff) {
-            this.fnNoteOff(instrumentId, safeNote);
-        }
-    }
-
-    // ============================================================
-    // RESET
-    // ============================================================
-    resetInstrument(instrumentId) {
-        if (this.wasmInstance && this.wasmExports.resetInstrument) {
-            this.wasmExports.resetInstrument(instrumentId);
-        }
-    }
-
-    // ============================================================
-    // AUDIO PROCESSING
-    // ============================================================
-    process(inputs, outputs, parameters) {
-        const output = outputs[0];
-        const input = inputs[0];
-
-        // Stereo output
-        const outputL = output[0];
-        const outputR = output[1] || output[0];
-
-        // === WASM PATH ===
-        if (this.wasmInstance && this.fnProcess) {
-            // Refresh memory view (WASM memory can grow)
-            this.wasmMemory = new Float32Array(this.wasmExports.memory.buffer);
-
-            // Copy input to WASM buffer (if available)
-            if (input && input.length > 0) {
-                const inputL = input[0];
-                const inputR = input[1] || input[0];
-
-                for (let i = 0; i < 128; i++) {
-                    // Stereo interleaved: L, R, L, R, ...
-                    this.wasmMemory[this.inputBufferOffset + i * 2] = inputL[i];
-                    this.wasmMemory[this.inputBufferOffset + i * 2 + 1] = inputR[i];
+            // Re-register instruments to WASM
+            for (const [id, inst] of this.registeredInstruments) {
+                if (this.fnRegisterInstrument) {
+                    this.fnRegisterInstrument(id, inst.type, inst.polyphony);
                 }
             }
 
-            // Process in WASM
+            this.port.postMessage({ type: MSG.WASM_READY, mode: 'wasm' });
+        } catch (err) {
+            console.error('[Worklet] WASM load failed, staying in JS mode:', err);
+        }
+    }
+
+    registerInstrument(id, type, polyphony) {
+        this.registeredInstruments.set(id, { type, polyphony, enabled: true });
+
+        // Always register in JS engine
+        this.jsEngine.register(id, type, polyphony);
+
+        // Also register in WASM if available
+        if (this.mode === 'wasm' && this.fnRegisterInstrument) {
+            this.fnRegisterInstrument(id, type, polyphony);
+        }
+
+        console.log(`[Worklet] Registered instrument ${id} (type=${type})`);
+        this.port.postMessage({ type: MSG.INSTRUMENT_READY, instrumentId: id });
+    }
+
+    routeParamChange(instId, paramId, value) {
+        if (!isFinite(value)) return;
+        const safeVal = Math.max(-1e6, Math.min(1e6, value));
+
+        this.jsEngine.setParameter(instId, paramId, safeVal);
+
+        if (this.mode === 'wasm' && this.fnSetParameter) {
+            this.fnSetParameter(instId, paramId, safeVal);
+        }
+    }
+
+    routeNoteOn(instId, note, velocity) {
+        const safeNote = Math.max(0, Math.min(127, Math.floor(note)));
+        const safeVel = Math.max(0, Math.min(1, velocity));
+
+        this.jsEngine.noteOn(instId, safeNote, safeVel);
+
+        if (this.mode === 'wasm' && this.fnNoteOn) {
+            this.fnNoteOn(instId, safeNote, safeVel);
+        }
+    }
+
+    routeNoteOff(instId, note) {
+        const safeNote = Math.max(0, Math.min(127, Math.floor(note)));
+
+        this.jsEngine.noteOff(instId, safeNote);
+
+        if (this.mode === 'wasm' && this.fnNoteOff) {
+            this.fnNoteOff(instId, safeNote);
+        }
+    }
+
+    resetInstrument(instId) {
+        this.jsEngine.reset(instId);
+    }
+
+    process(inputs, outputs, parameters) {
+        const output = outputs[0];
+        const input = inputs[0];
+        const outputL = output[0];
+        const outputR = output[1] || output[0];
+
+        // Clear output
+        for (let i = 0; i < 128; i++) {
+            outputL[i] = 0;
+            outputR[i] = 0;
+        }
+
+        // JS Fallback always runs (for reliability)
+        const jsBuffer = new Float32Array(256);
+        if (input && input.length > 0) {
+            const inputL = input[0];
+            const inputR = input[1] || input[0];
+            for (let i = 0; i < 128; i++) {
+                jsBuffer[i * 2] = inputL[i];
+                jsBuffer[i * 2 + 1] = inputR[i];
+            }
+        }
+        this.jsEngine.process(jsBuffer, 128);
+
+        // Mix JS output
+        for (let i = 0; i < 128; i++) {
+            outputL[i] += jsBuffer[i * 2];
+            outputR[i] += jsBuffer[i * 2 + 1];
+        }
+
+        // WASM path (if available and preferred)
+        if (this.mode === 'wasm' && this.fnProcess) {
+            this.wasmMemory = new Float32Array(this.wasmExports.memory.buffer);
+
+            // Copy to WASM
+            for (let i = 0; i < 128; i++) {
+                this.wasmMemory[this.inputBufferOffset + i * 2] = outputL[i];
+                this.wasmMemory[this.inputBufferOffset + i * 2 + 1] = outputR[i];
+            }
+
             this.fnProcess(128);
 
-            // Copy output from WASM buffer
+            // Copy from WASM
             for (let i = 0; i < 128; i++) {
                 outputL[i] = this.wasmMemory[this.outputBufferOffset + i * 2];
                 outputR[i] = this.wasmMemory[this.outputBufferOffset + i * 2 + 1];
             }
-
-        } else {
-            // === JS FALLBACK (Silence) ===
-            for (let i = 0; i < 128; i++) {
-                outputL[i] = 0;
-                outputR[i] = 0;
-            }
         }
 
-        // === METERING ===
+        // Metering
         this.updateMeters(outputL, outputR);
 
         return true;
     }
 
-    // ============================================================
-    // METERING
-    // ============================================================
     updateMeters(l, r) {
-        // Find peaks
         for (let i = 0; i < l.length; i++) {
             this.meterPeakL = Math.max(this.meterPeakL, Math.abs(l[i]));
             this.meterPeakR = Math.max(this.meterPeakR, Math.abs(r[i]));
         }
-
         this.meterFrameCount += l.length;
-
-        // Send to main thread periodically
         if (this.meterFrameCount >= this.METER_INTERVAL) {
-            this.port.postMessage({
-                type: MSG.METER_UPDATE,
-                peakL: this.meterPeakL,
-                peakR: this.meterPeakR,
-            });
-
-            // Reset for next interval
+            this.port.postMessage({ type: MSG.METER_UPDATE, peakL: this.meterPeakL, peakR: this.meterPeakR });
             this.meterPeakL = 0;
             this.meterPeakR = 0;
             this.meterFrameCount = 0;
@@ -325,5 +465,4 @@ class NexusDspEngine extends AudioWorkletProcessor {
     }
 }
 
-// Register the processor
 registerProcessor('nexus-dsp-engine', NexusDspEngine);
