@@ -8809,4 +8809,434 @@ window.generatePhonkWithVideo = function() {
     }
 };
 
+// ============================================================
+// 📱 SOCIAL MEDIA FEATURES
+// ============================================================
+
+// 21. TIKTOK/REELS BEAT GENERATOR
+window.openTikTokGenerator = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:600px;background:linear-gradient(180deg,#000,#1a0a2a);border:2px solid #ff0050;border-radius:16px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <h2 style="background:linear-gradient(90deg,#ff0050,#00f2ea);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:26px;margin:0;">📱 TIKTOK / REELS GENERATOR</h2>
+                <p style="color:#666;font-size:11px;margin-top:5px;">VIRAL BEATS IN SECONDS • OPTIMIZED FOR SHORT-FORM</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
+                <button class="tiktok-duration-btn" data-duration="15" style="background:#1a1a1a;border:2px solid #ff0050;color:#fff;padding:20px;border-radius:12px;cursor:pointer;">
+                    <div style="font-size:28px;">⚡</div>
+                    <div style="font-size:16px;font-weight:700;margin-top:8px;">15s</div>
+                    <div style="font-size:9px;color:#666;">TikTok Classic</div>
+                </button>
+                <button class="tiktok-duration-btn" data-duration="30" style="background:#1a1a1a;border:2px solid #00f2ea;color:#00f2ea;padding:20px;border-radius:12px;cursor:pointer;">
+                    <div style="font-size:28px;">🔥</div>
+                    <div style="font-size:16px;font-weight:700;margin-top:8px;">30s</div>
+                    <div style="font-size:9px;color:#666;">Reels Standard</div>
+                </button>
+                <button class="tiktok-duration-btn" data-duration="60" style="background:#1a1a1a;border:2px solid #ff0050;color:#fff;padding:20px;border-radius:12px;cursor:pointer;">
+                    <div style="font-size:28px;">🎯</div>
+                    <div style="font-size:16px;font-weight:700;margin-top:8px;">60s</div>
+                    <div style="font-size:9px;color:#666;">YouTube Shorts</div>
+                </button>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;display:block;margin-bottom:8px;">🎵 TRENDING STYLE</label>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+                    <button class="tiktok-style-btn" data-style="phonk" style="background:#111;border:1px solid #333;color:#fff;padding:10px;border-radius:6px;font-size:11px;">🐮 Phonk</button>
+                    <button class="tiktok-style-btn" data-style="lofi" style="background:#111;border:1px solid #333;color:#fff;padding:10px;border-radius:6px;font-size:11px;">☕ Lo-Fi</button>
+                    <button class="tiktok-style-btn" data-style="epic" style="background:#111;border:1px solid #333;color:#fff;padding:10px;border-radius:6px;font-size:11px;">⚔️ Epic</button>
+                    <button class="tiktok-style-btn" data-style="chill" style="background:#111;border:1px solid #333;color:#fff;padding:10px;border-radius:6px;font-size:11px;">🌊 Chill</button>
+                    <button class="tiktok-style-btn" data-style="hype" style="background:#111;border:1px solid #333;color:#fff;padding:10px;border-radius:6px;font-size:11px;">🔥 Hype</button>
+                    <button class="tiktok-style-btn" data-style="emo" style="background:#111;border:1px solid #333;color:#fff;padding:10px;border-radius:6px;font-size:11px;">💔 Sad</button>
+                    <button class="tiktok-style-btn" data-style="glitch" style="background:#111;border:1px solid #333;color:#fff;padding:10px;border-radius:6px;font-size:11px;">👾 Glitch</button>
+                    <button class="tiktok-style-btn" data-style="trap" style="background:#111;border:1px solid #333;color:#fff;padding:10px;border-radius:6px;font-size:11px;">🎯 Trap</button>
+                </div>
+            </div>
+
+            <div style="background:#0a0a0a;padding:15px;border-radius:10px;margin-bottom:15px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <span style="color:#666;font-size:10px;">📊 VIRAL OPTIMIZATION</span>
+                    <span style="color:#00ff94;font-size:10px;">✓ TRENDING</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div>
+                        <label style="color:#555;font-size:9px;">HOOK INTENSITY</label>
+                        <input type="range" id="tiktokHook" min="0" max="100" value="80" style="width:100%;">
+                    </div>
+                    <div>
+                        <label style="color:#555;font-size:9px;">BASS BOOST</label>
+                        <input type="range" id="tiktokBass" min="0" max="100" value="70" style="width:100%;">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button onclick="window.generateTikTokBeat()" style="flex:2;padding:15px;background:linear-gradient(90deg,#ff0050,#00f2ea);border:none;color:#000;border-radius:8px;cursor:pointer;font-weight:800;font-size:14px;">📱 GENERATE VIRAL BEAT</button>
+                <button onclick="window.previewTikTokBeat()" style="flex:1;padding:15px;background:#1a1a1a;border:2px solid #ff0050;color:#ff0050;border-radius:8px;cursor:pointer;font-weight:700;">▶️ PREVIEW</button>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:6px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    // Duration selection
+    dialog.querySelectorAll('.tiktok-duration-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            window.tiktokDuration = parseInt(b.dataset.duration || '30');
+            dialog.querySelectorAll('.tiktok-duration-btn').forEach((bb: Element) => { (bb as HTMLElement).style.opacity = '0.5'; });
+            b.style.opacity = '1';
+        };
+    });
+
+    // Style selection
+    dialog.querySelectorAll('.tiktok-style-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            window.tiktokStyle = b.dataset.style;
+            dialog.querySelectorAll('.tiktok-style-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; });
+            b.style.borderColor = '#ff0050';
+        };
+    });
+
+    window.tiktokDuration = 30;
+    window.tiktokStyle = 'phonk';
+
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.generateTikTokBeat = function() {
+    const duration = window.tiktokDuration || 30;
+    const style = window.tiktokStyle || 'phonk';
+    const hook = parseInt((document.getElementById('tiktokHook') as HTMLInputElement)?.value || '80');
+    const bass = parseInt((document.getElementById('tiktokBass') as HTMLInputElement)?.value || '70');
+
+    // Set appropriate genre
+    const styleGenres: Record<string, string> = {
+        'phonk': 'PHONK', 'lofi': 'LOFI', 'epic': 'CINEMATIC', 'chill': 'AMBIENT',
+        'hype': 'TECHNO', 'emo': 'ETHEREAL', 'glitch': 'CYBERPUNK', 'trap': 'TRAP'
+    };
+
+    if (window.sys?.setGenre) {
+        window.sys.setGenre(styleGenres[style] || 'PHONK');
+    }
+
+    // Set duration-based BPM (faster for shorter clips = more energy)
+    const bpmMultipliers: Record<number, number> = { 15: 1.15, 30: 1.0, 60: 0.95 };
+    const baseBpm = 130 * (bpmMultipliers[duration] || 1);
+
+    if (window.engine?.setBPM) {
+        window.engine.setBPM(Math.round(baseBpm));
+    }
+
+    // Apply viral optimization
+    window.tiktokSettings = { duration, style, hook, bass };
+
+    // Generate the beat
+    if (window.seq?.randomizeAll) {
+        window.seq.randomizeAll();
+    }
+
+    if (window.UIController?.toast) {
+        window.UIController.toast(`📱 ${duration}s ${style.toUpperCase()} beat generated! Ready for TikTok!`);
+    }
+};
+
+window.previewTikTokBeat = function() {
+    if (window.sys?.togglePlay) {
+        window.sys.togglePlay();
+    }
+    if (window.UIController?.toast) {
+        window.UIController.toast('▶️ Preview playing...');
+    }
+};
+
+// 22. VIRAL HOOK GENERATOR
+window.openViralHookGenerator = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:550px;background:linear-gradient(180deg,#0a0a0a,#1a1a2e);border:2px solid #ffd700;border-radius:16px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <h2 style="color:#ffd700;font-size:26px;margin:0;text-shadow:0 0 20px #ffd700;">🎵 VIRAL HOOK GENERATOR</h2>
+                <p style="color:#666;font-size:11px;margin-top:5px;">CATCHY MELODIES THAT STICK IN PEOPLE'S HEADS</p>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label style="color:#666;font-size:11px;display:block;margin-bottom:8px;">🎯 HOOK TYPE</label>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                    <button class="hook-type-btn" data-type="earworm" style="background:#111;border:2px solid #ffd700;color:#ffd700;padding:15px;border-radius:8px;cursor:pointer;">
+                        <div style="font-size:20px;">🧠</div>
+                        <div style="font-size:10px;margin-top:5px;">Earworm</div>
+                    </button>
+                    <button class="hook-type-btn" data-type="anthem" style="background:#111;border:2px solid #333;color:#fff;padding:15px;border-radius:8px;cursor:pointer;">
+                        <div style="font-size:20px;">🎤</div>
+                        <div style="font-size:10px;margin-top:5px;">Anthem</div>
+                    </button>
+                    <button class="hook-type-btn" data-type="drop" style="background:#111;border:2px solid #333;color:#fff;padding:15px;border-radius:8px;cursor:pointer;">
+                        <div style="font-size:20px;">💥</div>
+                        <div style="font-size:10px;margin-top:5px;">Drop</div>
+                    </button>
+                    <button class="hook-type-btn" data-type="tag" style="background:#111;border:2px solid #333;color:#fff;padding:15px;border-radius:8px;cursor:pointer;">
+                        <div style="font-size:20px;">🏷️</div>
+                        <div style="font-size:10px;margin-top:5px;">Producer Tag</div>
+                    </button>
+                    <button class="hook-type-btn" data-type="jingle" style="background:#111;border:2px solid #333;color:#fff;padding:15px;border-radius:8px;cursor:pointer;">
+                        <div style="font-size:20px;">📺</div>
+                        <div style="font-size:10px;margin-top:5px;">Jingle</div>
+                    </button>
+                    <button class="hook-type-btn" data-type="meme" style="background:#111;border:2px solid #333;color:#fff;padding:15px;border-radius:8px;cursor:pointer;">
+                        <div style="font-size:20px;">😂</div>
+                        <div style="font-size:10px;margin-top:5px;">Meme Sound</div>
+                    </button>
+                </div>
+            </div>
+
+            <div style="background:#0a0a0a;padding:15px;border-radius:10px;margin-bottom:15px;">
+                <div style="margin-bottom:12px;">
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">🎯 CATCHINESS LEVEL</label>
+                    <input type="range" id="hookCatchiness" min="50" max="100" value="85" style="width:100%;">
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">⏱️ HOOK LENGTH (seconds)</label>
+                    <select id="hookLength" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                        <option value="3">3 seconds (Ultra Short)</option>
+                        <option value="5" selected>5 seconds (TikTok Hook)</option>
+                        <option value="8">8 seconds (Verse Hook)</option>
+                        <option value="15">15 seconds (Chorus)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">🎹 MUSICAL KEY</label>
+                    <select id="hookKey" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                        <option value="Cminor">C Minor (Dark & Catchy)</option>
+                        <option value="Cmajor">C Major (Happy & Bright)</option>
+                        <option value="Aminor" selected>A Minor (Emotional)</option>
+                        <option value="Dminor">D Minor (Sad TikTok)</option>
+                        <option value="Emajor">E Major (Energetic)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="background:#1a1a1a;padding:10px;border-radius:8px;margin-bottom:15px;border-left:3px solid #ffd700;">
+                <div style="color:#ffd700;font-size:10px;margin-bottom:5px;">💡 PRO TIP</div>
+                <div style="color:#666;font-size:10px;">The best hooks use simple 3-5 note patterns that repeat. Think "Oh No" by Kreepa or "Stay" by The Kid LAROI.</div>
+            </div>
+
+            <button onclick="window.generateViralHook()" style="width:100%;padding:15px;background:linear-gradient(90deg,#ffd700,#ff8c00);border:none;color:#000;border-radius:8px;cursor:pointer;font-weight:800;font-size:14px;">🎵 GENERATE VIRAL HOOK</button>
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:6px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    dialog.querySelectorAll('.hook-type-btn').forEach((btn: Element) => {
+        const b = btn as HTMLElement;
+        b.onclick = () => {
+            window.hookType = b.dataset.type;
+            dialog.querySelectorAll('.hook-type-btn').forEach((bb: Element) => { (bb as HTMLElement).style.borderColor = '#333'; (bb as HTMLElement).style.color = '#fff'; });
+            b.style.borderColor = '#ffd700';
+            b.style.color = '#ffd700';
+        };
+    });
+
+    window.hookType = 'earworm';
+
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.generateViralHook = function() {
+    const type = window.hookType || 'earworm';
+    const catchiness = parseInt((document.getElementById('hookCatchiness') as HTMLInputElement)?.value || '85');
+    const length = parseInt((document.getElementById('hookLength') as HTMLSelectElement)?.value || '5');
+    const key = (document.getElementById('hookKey') as HTMLSelectElement)?.value || 'Aminor';
+
+    // Famous hook patterns (simplified note intervals)
+    const hookPatterns: Record<string, number[][]> = {
+        'earworm': [[0, 2, 4, 2, 0], [0, 4, 2, 0, -3], [0, 2, 0, -2, 0]],
+        'anthem': [[0, 4, 7, 4, 0], [0, 5, 7, 5, 0], [0, 3, 5, 7, 5]],
+        'drop': [[0, 0, -3, 0, 0], [0, -2, -5, -2, 0], [0, 0, 0, 3, 0]],
+        'tag': [[0, 7, 5], [0, 4, 0], [0, 3, 5]],
+        'jingle': [[0, 2, 4, 5, 4], [0, 4, 2, 0], [5, 4, 2, 0]],
+        'meme': [[0, 0, 0, -5], [0, 5, 4, 2], [0, -2, 0, 3]]
+    };
+
+    const pattern = hookPatterns[type][Math.floor(Math.random() * hookPatterns[type].length)];
+    window.currentHookPattern = pattern;
+
+    // Apply to lead track
+    if (window.engine?.setScale) {
+        const keyScale = key.includes('minor') ? 'minor' : 'major';
+        window.engine.setScale(keyScale);
+    }
+
+    window.hookSettings = { type, catchiness, length, key, pattern };
+
+    if (window.UIController?.toast) {
+        window.UIController.toast(`🎵 ${type.toUpperCase()} Hook generated! Pattern: [${pattern.join('-')}]`);
+    }
+};
+
+// 23. SOCIAL MEDIA EXPORT BUNDLE
+window.openSocialExport = function() {
+    const dialog = document.createElement('dialog');
+    dialog.style.cssText = `width:650px;background:linear-gradient(180deg,#0a0a0a,#0a1a2a);border:2px solid #00ff94;border-radius:16px;color:#fff;`;
+    dialog.innerHTML = `
+        <div style="padding:20px;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <h2 style="color:#00ff94;font-size:24px;margin:0;">📦 SOCIAL MEDIA EXPORT BUNDLE</h2>
+                <p style="color:#666;font-size:11px;margin-top:5px;">ONE-CLICK EXPORT FOR ALL PLATFORMS • OPTIMIZED SPECS</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
+                <div style="background:#111;padding:15px;border-radius:10px;text-align:center;border:1px solid #ff0050;">
+                    <div style="font-size:28px;">📱</div>
+                    <div style="font-size:12px;font-weight:700;color:#ff0050;margin-top:8px;">TikTok</div>
+                    <div style="font-size:9px;color:#666;margin-top:4px;">1080x1920</div>
+                    <div style="font-size:9px;color:#666;">-14 LUFS</div>
+                    <input type="checkbox" id="expTiktok" checked style="margin-top:8px;accent-color:#ff0050;">
+                </div>
+                <div style="background:#111;padding:15px;border-radius:10px;text-align:center;border:1px solid #E1306C;">
+                    <div style="font-size:28px;">📸</div>
+                    <div style="font-size:12px;font-weight:700;color:#E1306C;margin-top:8px;">Reels</div>
+                    <div style="font-size:9px;color:#666;margin-top:4px;">1080x1920</div>
+                    <div style="font-size:9px;color:#666;">-14 LUFS</div>
+                    <input type="checkbox" id="expReels" checked style="margin-top:8px;accent-color:#E1306C;">
+                </div>
+                <div style="background:#111;padding:15px;border-radius:10px;text-align:center;border:1px solid #FF0000;">
+                    <div style="font-size:28px;">▶️</div>
+                    <div style="font-size:12px;font-weight:700;color:#FF0000;margin-top:8px;">Shorts</div>
+                    <div style="font-size:9px;color:#666;margin-top:4px;">1080x1920</div>
+                    <div style="font-size:9px;color:#666;">-14 LUFS</div>
+                    <input type="checkbox" id="expShorts" checked style="margin-top:8px;accent-color:#FF0000;">
+                </div>
+                <div style="background:#111;padding:15px;border-radius:10px;text-align:center;border:1px solid #ff0000;">
+                    <div style="font-size:28px;">🎥</div>
+                    <div style="font-size:12px;font-weight:700;color:#ff0000;margin-top:8px;">YouTube</div>
+                    <div style="font-size:9px;color:#666;margin-top:4px;">1920x1080</div>
+                    <div style="font-size:9px;color:#666;">-14 LUFS</div>
+                    <input type="checkbox" id="expYoutube" style="margin-top:8px;accent-color:#ff0000;">
+                </div>
+            </div>
+
+            <div style="background:#0a0a0a;padding:15px;border-radius:10px;margin-bottom:15px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;">
+                    <div>
+                        <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">⏱️ DURATION</label>
+                        <select id="exportDuration" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                            <option value="15">15 seconds</option>
+                            <option value="30" selected>30 seconds</option>
+                            <option value="60">60 seconds</option>
+                            <option value="full">Full Track</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">🔊 FORMAT</label>
+                        <select id="exportFormat" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                            <option value="wav">WAV (Best Quality)</option>
+                            <option value="mp3" selected>MP3 (Smaller)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="color:#555;font-size:9px;display:block;margin-bottom:5px;">📊 QUALITY</label>
+                        <select id="exportQuality" style="width:100%;background:#111;border:1px solid #333;color:#fff;padding:8px;border-radius:4px;">
+                            <option value="high">High (320kbps)</option>
+                            <option value="medium" selected>Medium (192kbps)</option>
+                            <option value="low">Low (128kbps)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#1a1a1a;padding:12px;border-radius:8px;margin-bottom:15px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="color:#666;font-size:11px;">📦 Selected Platforms</span>
+                    <span id="platformCount" style="color:#00ff94;font-size:11px;font-weight:700;">3 platforms</span>
+                </div>
+            </div>
+
+            <button onclick="window.exportSocialBundle()" style="width:100%;padding:15px;background:linear-gradient(90deg,#00ff94,#00ccff);border:none;color:#000;border-radius:8px;cursor:pointer;font-weight:800;font-size:14px;">📦 EXPORT ALL SELECTED</button>
+
+            <div style="margin-top:15px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <button onclick="window.quickExportTikTok()" style="padding:12px;background:#ff0050;border:none;color:#fff;border-radius:6px;cursor:pointer;font-weight:700;">📱 Quick TikTok</button>
+                <button onclick="window.quickExportReels()" style="padding:12px;background:linear-gradient(45deg,#f09433,#E1306C);border:none;color:#fff;border-radius:6px;cursor:pointer;font-weight:700;">📸 Quick Reels</button>
+            </div>
+
+            <button onclick="this.closest('dialog').close()" style="margin-top:10px;width:100%;padding:10px;background:#222;border:none;color:#fff;border-radius:6px;cursor:pointer;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    // Update platform count on checkbox change
+    const updateCount = () => {
+        const checkboxes = ['expTiktok', 'expReels', 'expShorts', 'expYoutube'];
+        const count = checkboxes.filter(id => (document.getElementById(id) as HTMLInputElement)?.checked).length;
+        const countEl = document.getElementById('platformCount');
+        if (countEl) countEl.textContent = `${count} platform${count !== 1 ? 's' : ''}`;
+    };
+
+    ['expTiktok', 'expReels', 'expShorts', 'expYoutube'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', updateCount);
+    });
+
+    dialog.showModal();
+    dialog.onclose = () => dialog.remove();
+};
+
+window.exportSocialBundle = function() {
+    const platforms = [];
+    if ((document.getElementById('expTiktok') as HTMLInputElement)?.checked) platforms.push('TikTok');
+    if ((document.getElementById('expReels') as HTMLInputElement)?.checked) platforms.push('Reels');
+    if ((document.getElementById('expShorts') as HTMLInputElement)?.checked) platforms.push('Shorts');
+    if ((document.getElementById('expYoutube') as HTMLInputElement)?.checked) platforms.push('YouTube');
+
+    const duration = (document.getElementById('exportDuration') as HTMLSelectElement)?.value || '30';
+    const format = (document.getElementById('exportFormat') as HTMLSelectElement)?.value || 'mp3';
+    const quality = (document.getElementById('exportQuality') as HTMLSelectElement)?.value || 'medium';
+
+    if (platforms.length === 0) {
+        if (window.UIController?.toast) {
+            window.UIController.toast('⚠️ Please select at least one platform!');
+        }
+        return;
+    }
+
+    // Apply mastering preset for social media
+    window.applyAIMastering('streaming');
+
+    if (window.UIController?.toast) {
+        window.UIController.toast(`📦 Exporting for ${platforms.join(', ')}... (${duration}s, ${format.toUpperCase()})`);
+    }
+
+    // Trigger actual export if available
+    if (window.wavExporter?.exportWAV) {
+        window.wavExporter.exportWAV();
+    }
+};
+
+window.quickExportTikTok = function() {
+    window.applyAIMastering('streaming');
+    if (window.UIController?.toast) {
+        window.UIController.toast('📱 Quick export for TikTok (30s, -14 LUFS)...');
+    }
+    if (window.wavExporter?.exportWAV) {
+        window.wavExporter.exportWAV();
+    }
+};
+
+window.quickExportReels = function() {
+    window.applyAIMastering('streaming');
+    if (window.UIController?.toast) {
+        window.UIController.toast('📸 Quick export for Reels (30s, -14 LUFS)...');
+    }
+    if (window.wavExporter?.exportWAV) {
+        window.wavExporter.exportWAV();
+    }
+};
+
 
