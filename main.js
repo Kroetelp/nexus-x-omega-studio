@@ -28,7 +28,11 @@ const GENRES = {
     'CHIPTUNE': { bpmRange: [120, 140], scale: 'nesMajor', kit: 'CHIPTUNE', arpLead: true, progressions: [[0, 3, 4, 0], [0, 2, 0, 4]] },
     'CINEMATIC': { bpmRange: [60, 80], scale: 'interstellar', kit: 'CINEMATIC', arpLead: false, progressions: [[0, -2, -4, -2], [0, 2, 0, -2]] },
     'HAPPYHARDCORE': { bpmRange: [170, 185], scale: 'ionian', kit: 'NEON', arpLead: true, progressions: [[0, 4, 5, 3], [0, 2, 4, 0], [0, 5, 4, 2]] },
-    'DUNGEONSYNTH': { bpmRange: [60, 85], scale: 'dorianSharp4', kit: 'DUNGEON', arpLead: true, progressions: [[0, 1, -2, 2], [0, -1, -3, 0]] }
+    'DUNGEONSYNTH': { bpmRange: [60, 85], scale: 'dorianSharp4', kit: 'DUNGEON', arpLead: true, progressions: [[0, 1, -2, 2], [0, -1, -3, 0]] },
+    // 🔥 NEW HARDCORE GENRES
+    'UPTEMPO': { bpmRange: [180, 220], scale: 'phrygian', kit: 'INDUSTRIAL', arpLead: true, progressions: [[0, 0, 0, 0], [0, -1, 0, -2]] },
+    'DEUTSCHETEKK': { bpmRange: [150, 180], scale: 'harmonicMinor', kit: 'ACID', arpLead: false, progressions: [[0, 0, -1, 0], [0, 2, 0, -1]] },
+    'OSSITEKK': { bpmRange: [140, 170], scale: 'dorian', kit: 'GLITCH', arpLead: false, progressions: [[0, -1, 0, -2], [0, 0, -1, 0]] }
 };
 
 // 🎵 GENRE-SPECIFIC PATTERNS - 32-STEP PATTERNS with real musical depth
@@ -267,6 +271,48 @@ const GENRE_PATTERNS = {
             octave: 5
         },
         vibe: 's3rl-rave-party-anthem-euphoric'
+    },
+    // 🔥 UPTEMPO - Hardcore style (180-220 BPM)
+    'UPTEMPO': {
+        drums: {
+            // Angerfist/Noize Suppressor style: relentless kicks, fast snares
+            kick:  [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+            snare: [0,0,0,1, 0,0,0,1, 0,0,0,1, 0,0,1,1, 0,0,0,1, 0,0,0,1, 0,0,0,1, 0,1,0,1],
+            hihat: [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
+            clap:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,1]
+        },
+        bass: { style: 'distorted-rumble', density: 0.9, octaveJump: false },
+        lead: { style: 'aggressive-saw', speed: '16n', range: [2, 5] },
+        pad: { style: 'dark-drone', changeRate: 8 },
+        vibe: 'angerfist-masters-of-hardcore'
+    },
+    // 🇩🇪 DEUTSCHE TEKKE - German Hardstyle/Tekno
+    'DEUTSCHETEKK': {
+        drums: {
+            // Hardstyle kick pattern with off-beat bass
+            kick:  [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+            snare: [0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0, 1,1,0,0],
+            hihat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
+            clap:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0]
+        },
+        bass: { style: 'offbeat-hardstyle', density: 0.85, octaveJump: true },
+        lead: { style: 'reverse-bass', speed: '4n', range: [1, 4] },
+        pad: { style: 'euphoric-stabs', changeRate: 4 },
+        vibe: 'headhunterz-wildstylez-hardstyle'
+    },
+    // ⬛ OSSI TEKK - East German Tekno
+    'OSSITEKK': {
+        drums: {
+            // Raw acid-style tekno pattern
+            kick:  [1,0,0,0, 0,0,1,0, 0,0,1,0, 0,0,0,0, 1,0,0,0, 0,0,1,0, 0,1,0,0, 0,0,1,0],
+            snare: [0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,1, 0,0,0,0, 0,1,0,1],
+            hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+            clap:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0]
+        },
+        bass: { style: 'acid-303-squelch', density: 0.75, octaveJump: false },
+        lead: { style: '303-resonance', speed: '16n', range: [0, 3] },
+        pad: { style: 'minimal-dark', changeRate: 8 },
+        vibe: 'east-germany-warehouse-rave'
     }
 };
 
@@ -6114,6 +6160,9 @@ window.openDrum808 = async function() {
                 <button class="preset-btn-808" data-preset="trap">TRAP</button>
                 <button class="preset-btn-808" data-preset="house">HOUSE</button>
                 <button class="preset-btn-808" data-preset="techno">TECHNO</button>
+                <button class="preset-btn-808" data-preset="uptempo" style="border-color: #ff0055; color: #ff0055;">🔥 UPTEMPO</button>
+                <button class="preset-btn-808" data-preset="deutschetekk" style="border-color: #f59e0b; color: #f59e0b;">🇩🇪 DEUTSCHE TEKKE</button>
+                <button class="preset-btn-808" data-preset="ossitekk" style="border-color: #00ff94; color: #00ff94;">⬛ OSSI TEKK</button>
             </div>
             <div style="margin-top: 15px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #555; text-align: center;">
                 🎹 Keys: 1-5, Q-R, Z-U &nbsp;|&nbsp; 🖱️ Click pads to play
@@ -6251,19 +6300,80 @@ window.openDrum808 = async function() {
             const preset = btn.dataset.preset;
             console.log(`[808] Preset: ${preset}`);
 
-            // Adjust kick based on preset
-            if (preset === 'trap') {
-                synths.kick.pitchDecay = 0.6;
-                synths.kick.envelope.decay = 1.2;
-            } else if (preset === 'hiphop') {
-                synths.kick.pitchDecay = 0.5;
-                synths.kick.envelope.decay = 0.9;
-            } else if (preset === 'house') {
-                synths.kick.pitchDecay = 0.3;
-                synths.kick.envelope.decay = 0.5;
-            } else {
-                synths.kick.pitchDecay = 0.5;
-                synths.kick.envelope.decay = 0.8;
+            // Adjust drums based on preset
+            switch (preset) {
+                case 'trap':
+                    synths.kick.pitchDecay = 0.6;
+                    synths.kick.envelope.decay = 1.2;
+                    synths.hhClosed.envelope.decay = 0.03;
+                    break;
+
+                case 'hiphop':
+                    synths.kick.pitchDecay = 0.5;
+                    synths.kick.envelope.decay = 0.9;
+                    synths.snare.envelope.decay = 0.25;
+                    break;
+
+                case 'house':
+                    synths.kick.pitchDecay = 0.3;
+                    synths.kick.envelope.decay = 0.5;
+                    synths.hhClosed.envelope.decay = 0.06;
+                    break;
+
+                case 'techno':
+                    synths.kick.pitchDecay = 0.2;
+                    synths.kick.envelope.decay = 0.4;
+                    synths.hhClosed.envelope.decay = 0.04;
+                    synths.clap.envelope.decay = 0.15;
+                    break;
+
+                // 🔥 UPTEMPO - Hard & Fast (180+ BPM style)
+                case 'uptempo':
+                    synths.kick.pitchDecay = 0.15;
+                    synths.kick.envelope.decay = 0.3;
+                    synths.kick.volume.value = 0;
+                    synths.snare.envelope.decay = 0.1;
+                    synths.snare.volume.value = -3;
+                    synths.hhClosed.envelope.decay = 0.02;
+                    synths.clap.envelope.decay = 0.1;
+                    console.log('[808] 🔥 UPTEMPO MODE - Hard & Fast!');
+                    break;
+
+                // 🇩🇪 DEUTSCHE TEKKE - Hardstyle inspired
+                case 'deutschetekk':
+                    synths.kick.pitchDecay = 0.7;
+                    synths.kick.envelope.decay = 0.6;
+                    synths.kick.volume.value = -2;
+                    synths.snare.envelope.decay = 0.15;
+                    synths.snare.volume.value = -4;
+                    synths.hhClosed.envelope.decay = 0.03;
+                    synths.hhOpen.envelope.decay = 0.25;
+                    synths.clap.envelope.decay = 0.2;
+                    console.log('[808] 🇩🇪 DEUTSCHE TEKKE - Hardstyle Style!');
+                    break;
+
+                // ⬛ OSSI TEKK - East German Tekno
+                case 'ossitekk':
+                    synths.kick.pitchDecay = 0.8;
+                    synths.kick.envelope.decay = 0.5;
+                    synths.kick.volume.value = -1;
+                    synths.snare.envelope.decay = 0.12;
+                    synths.snare.volume.value = -5;
+                    synths.hhClosed.envelope.decay = 0.025;
+                    synths.hhOpen.envelope.decay = 0.2;
+                    synths.tomLow.envelope.decay = 0.4;
+                    synths.tomLow.volume.value = -3;
+                    console.log('[808] ⬛ OSSI TEKK - East German Style!');
+                    break;
+
+                default: // classic
+                    synths.kick.pitchDecay = 0.5;
+                    synths.kick.envelope.decay = 0.8;
+                    synths.kick.volume.value = -3;
+                    synths.snare.envelope.decay = 0.2;
+                    synths.snare.volume.value = -6;
+                    synths.hhClosed.envelope.decay = 0.05;
+                    synths.clap.envelope.decay = 0.3;
             }
         });
     });
