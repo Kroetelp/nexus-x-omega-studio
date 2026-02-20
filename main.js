@@ -5675,3 +5675,255 @@ if (originalToggleRecord) {
 
 // Start binding
 document.getElementById('initBtn').addEventListener('click', () => window.sys.init());
+
+// ============================================================
+// PIANO ROLL - Dynamic import for TypeScript module
+// ============================================================
+let pianoRollDialog = null;
+
+window.openPianoRoll = async function(instrumentId = 6) {
+    try {
+        // Dynamic import of the Piano Roll Dialog (with cache busting)
+        const module = await import('./src/ui/PianoRollDialog.ts?v=' + Date.now());
+
+        if (!pianoRollDialog) {
+            pianoRollDialog = new module.PianoRollDialog({
+                instrumentId: instrumentId,
+                onNotesChange: (notes) => {
+                    console.log('[PianoRoll] Notes changed:', notes.length);
+                    // Could integrate with sequencer here
+                }
+            });
+        }
+
+        pianoRollDialog.open();
+        console.log('[PianoRoll] Opened');
+    } catch (error) {
+        console.error('[PianoRoll] Error loading module:', error);
+
+        // Fallback: Simple inline Piano Roll
+        showSimplePianoRoll();
+    }
+};
+
+// Fallback simple Piano Roll (no TypeScript dependency)
+function showSimplePianoRoll() {
+    const existing = document.getElementById('simple-piano-roll');
+    if (existing) {
+        existing.remove();
+        return;
+    }
+
+    const dialog = document.createElement('dialog');
+    dialog.id = 'simple-piano-roll';
+    dialog.style.cssText = `
+        width: 90vw;
+        height: 80vh;
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 0;
+        color: #fff;
+    `;
+
+    dialog.innerHTML = `
+        <div style="display: flex; flex-direction: column; height: 100%;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: linear-gradient(180deg, #1a1a1a, #0f0f0f); border-bottom: 1px solid #333;">
+                <div class="font-mono" style="font-size: 16px; font-weight: 800; color: var(--primary);">
+                    🎹 PIANO ROLL EDITOR <span style="color:#666;font-size:11px;">Simple Mode</span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="this.closest('dialog').close()" style="background: var(--primary); border: none; color: #000; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: 700;">✓ Done</button>
+                    <button onclick="this.closest('dialog').remove()" style="background: transparent; border: 1px solid #444; color: #666; width: 30px; height: 30px; border-radius: 4px; cursor: pointer;">✕</button>
+                </div>
+            </div>
+            <div id="simple-piano-container" style="flex: 1; position: relative; overflow: hidden;"></div>
+            <div style="padding: 8px 20px; background: #0a0a0a; border-top: 1px solid #222; font-size: 11px; color: #666; font-family: 'JetBrains Mono', monospace;">
+                Click on the grid to add notes. Double-click to remove. Scroll to navigate.
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    // Simple piano roll canvas implementation
+    const container = document.getElementById('simple-piano-container');
+    const canvas = document.createElement('canvas');
+    container.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    const rect = container.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+
+    const NOTE_HEIGHT = 16;
+    const BEAT_WIDTH = 40;
+    const PIANO_WIDTH = 60;
+    const TOTAL_BEATS = 64;
+    const MIN_PITCH = 36;
+    const MAX_PITCH = 84;
+    const PITCH_RANGE = MAX_PITCH - MIN_PITCH;
+
+    const notes = [];
+    let selectedNote = null;
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+
+    const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    function getNoteName(pitch) {
+        return NOTE_NAMES[pitch % 12] + Math.floor(pitch / 12 - 1);
+    }
+    function isBlack(pitch) {
+        return [1, 3, 6, 8, 10].includes(pitch % 12);
+    }
+
+    function render() {
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Grid
+        ctx.translate(PIANO_WIDTH, 0);
+        for (let beat = 0; beat <= TOTAL_BEATS; beat++) {
+            ctx.strokeStyle = beat % 4 === 0 ? '#333' : '#1a1a1a';
+            ctx.lineWidth = beat % 4 === 0 ? 1 : 0.5;
+            ctx.beginPath();
+            ctx.moveTo(beat * BEAT_WIDTH, 0);
+            ctx.lineTo(beat * BEAT_WIDTH, PITCH_RANGE * NOTE_HEIGHT);
+            ctx.stroke();
+        }
+
+        for (let p = 0; p <= PITCH_RANGE; p++) {
+            const pitch = MAX_PITCH - p;
+            const y = p * NOTE_HEIGHT;
+            ctx.fillStyle = isBlack(pitch) ? '#111' : '#161616';
+            ctx.fillRect(0, y, TOTAL_BEATS * BEAT_WIDTH, NOTE_HEIGHT);
+        }
+
+        // Notes
+        notes.forEach(note => {
+            const x = note.start * BEAT_WIDTH;
+            const y = (MAX_PITCH - note.pitch) * NOTE_HEIGHT;
+            const w = note.duration * BEAT_WIDTH;
+
+            ctx.fillStyle = note === selectedNote ? '#ff00cc' : '#00ff94';
+            ctx.globalAlpha = 0.5 + (note.velocity / 127) * 0.5;
+            ctx.beginPath();
+            ctx.roundRect(x + 1, y + 1, w - 2, NOTE_HEIGHT - 2, 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            if (w > 30) {
+                ctx.fillStyle = '#000';
+                ctx.font = '10px JetBrains Mono';
+                ctx.fillText(getNoteName(note.pitch), x + 4, y + NOTE_HEIGHT - 4);
+            }
+        });
+
+        // Piano keys
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        for (let p = 0; p <= PITCH_RANGE; p++) {
+            const pitch = MAX_PITCH - p;
+            const y = p * NOTE_HEIGHT;
+            ctx.fillStyle = isBlack(pitch) ? '#1a1a1a' : '#e0e0e0';
+            ctx.fillRect(0, y, PIANO_WIDTH, NOTE_HEIGHT);
+            ctx.strokeStyle = '#333';
+            ctx.strokeRect(0, y, PIANO_WIDTH, NOTE_HEIGHT);
+
+            if (pitch % 12 === 0) {
+                ctx.fillStyle = isBlack(pitch) ? '#888' : '#333';
+                ctx.font = '10px JetBrains Mono';
+                ctx.fillText(getNoteName(pitch), 5, y + NOTE_HEIGHT - 4);
+            }
+        }
+    }
+
+    canvas.onmousedown = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left - PIANO_WIDTH;
+        const y = e.clientY - rect.top;
+
+        if (x < 0) {
+            // Piano key click - play preview
+            const pitch = MAX_PITCH - Math.floor(y / NOTE_HEIGHT);
+            if (window.engine?.noteOn) {
+                window.engine.noteOn(pitch, 0.8);
+                setTimeout(() => window.engine.noteOff?.(pitch), 200);
+            }
+            return;
+        }
+
+        const beat = Math.floor(x / BEAT_WIDTH);
+        const pitch = MAX_PITCH - Math.floor(y / NOTE_HEIGHT);
+
+        // Check if clicking existing note
+        const clickedNote = notes.find(n => {
+            const nx = n.start * BEAT_WIDTH;
+            const ny = (MAX_PITCH - n.pitch) * NOTE_HEIGHT;
+            return x >= nx && x <= nx + n.duration * BEAT_WIDTH &&
+                   y >= ny && y <= ny + NOTE_HEIGHT;
+        });
+
+        if (clickedNote) {
+            selectedNote = clickedNote;
+            isDragging = true;
+            dragStart = { x, y };
+        } else {
+            // Create new note
+            const note = {
+                id: Date.now(),
+                pitch,
+                start: beat,
+                duration: 1,
+                velocity: 100
+            };
+            notes.push(note);
+            selectedNote = note;
+        }
+        render();
+    };
+
+    canvas.onmousemove = (e) => {
+        if (!isDragging || !selectedNote) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left - PIANO_WIDTH;
+        const dx = x - dragStart.x;
+
+        if (e.shiftKey) {
+            // Resize
+            selectedNote.duration = Math.max(0.25, 1 + Math.round(dx / BEAT_WIDTH));
+        } else {
+            // Move
+            const newBeat = Math.max(0, Math.round(x / BEAT_WIDTH));
+            selectedNote.start = newBeat;
+        }
+        render();
+    };
+
+    canvas.onmouseup = () => {
+        isDragging = false;
+    };
+
+    canvas.ondblclick = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left - PIANO_WIDTH;
+        const y = e.clientY - rect.top;
+
+        const idx = notes.findIndex(n => {
+            const nx = n.start * BEAT_WIDTH;
+            const ny = (MAX_PITCH - n.pitch) * NOTE_HEIGHT;
+            return x >= nx && x <= nx + n.duration * BEAT_WIDTH &&
+                   y >= ny && y <= ny + NOTE_HEIGHT;
+        });
+
+        if (idx >= 0) {
+            notes.splice(idx, 1);
+            selectedNote = null;
+            render();
+        }
+    };
+
+    render();
+    console.log('[PianoRoll] Simple mode loaded');
+}

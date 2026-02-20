@@ -214,6 +214,217 @@ class JsFx {
     reset() {}
 }
 
+// ============================================================
+// FM SYNTH - 4 Operator Frequency Modulation
+// ============================================================
+
+class FmOperator {
+    constructor() {
+        this.phase = 0;
+        this.ratio = 1;
+        this.level = 0.5;
+        this.feedback = 0;
+        this.attack = 0.001;
+        this.decay = 0.1;
+        this.sustain = 0.5;
+        this.release = 0.3;
+        this.envLevel = 0;
+        this.envState = 'idle';
+        this.lastOut = 0;
+    }
+
+    noteOn() {
+        this.phase = 0;
+        this.envState = 'attack';
+        this.envLevel = 0;
+    }
+
+    noteOff() {
+        this.envState = 'release';
+    }
+
+    process(dt, baseFreq, modulation) {
+        // ADSR
+        switch (this.envState) {
+            case 'attack':
+                this.envLevel += dt / this.attack;
+                if (this.envLevel >= 1) { this.envLevel = 1; this.envState = 'decay'; }
+                break;
+            case 'decay':
+                this.envLevel -= (1 - this.sustain) * (dt / this.decay);
+                if (this.envLevel <= this.sustain) { this.envLevel = this.sustain; this.envState = 'sustain'; }
+                break;
+            case 'sustain':
+                break;
+            case 'release':
+                this.envLevel -= this.sustain * (dt / this.release);
+                if (this.envLevel <= 0) { this.envLevel = 0; this.envState = 'idle'; }
+                break;
+            case 'idle':
+                return 0;
+        }
+
+        // FM synthesis: freq = baseFreq * ratio + modulation
+        const freq = baseFreq * this.ratio;
+        const phaseInc = freq / 44100;
+
+        // Phase with feedback and modulation
+        this.phase += phaseInc + (this.lastOut * this.feedback * 0.3) + (modulation * 0.5);
+        if (this.phase >= 1) this.phase -= 1;
+        if (this.phase < 0) this.phase += 1;
+
+        // Sine output
+        const out = Math.sin(2 * Math.PI * this.phase) * this.envLevel * this.level;
+        this.lastOut = out;
+        return out;
+    }
+
+    isActive() { return this.envState !== 'idle'; }
+    reset() { this.phase = 0; this.envLevel = 0; this.envState = 'idle'; this.lastOut = 0; }
+}
+
+class JsFmSynth {
+    constructor(id, polyphony = 4) {
+        this.id = id;
+        this.polyphony = polyphony;
+        this.voices = [];
+        this.masterVol = 0.7;
+        this.pan = 0;
+        this.algorithm = 0;
+        this.glide = 0;
+
+        // 4 operators per voice
+        for (let i = 0; i < polyphony; i++) {
+            this.voices.push({
+                note: 0,
+                freq: 440,
+                active: false,
+                ops: [new FmOperator(), new FmOperator(), new FmOperator(), new FmOperator()],
+                glideFreq: 440,
+                glideTarget: 440,
+            });
+        }
+    }
+
+    setParameter(p, v) {
+        // Operator params: base + opIndex * 10
+        for (let op = 0; op < 4; op++) {
+            const base = op * 10;
+            if (p === base + 0) { for (const v of this.voices) v.ops[op].ratio = v; }
+            if (p === base + 1) { for (const v of this.voices) v.ops[op].level = v; }
+            if (p === base + 2) { for (const v of this.voices) v.ops[op].feedback = v; }
+            if (p === base + 3) { for (const v of this.voices) v.ops[op].attack = v; }
+            if (p === base + 4) { for (const v of this.voices) v.ops[op].decay = v; }
+            if (p === base + 5) { for (const v of this.voices) v.ops[op].sustain = v; }
+            if (p === base + 6) { for (const v of this.voices) v.ops[op].release = v; }
+        }
+        if (p === 40) this.algorithm = Math.floor(v);
+        if (p === 44) this.glide = v;
+        if (p === 60) this.masterVol = v;
+        if (p === 61) this.pan = v;
+    }
+
+    noteOn(note, vel) {
+        const freq = 440 * Math.pow(2, (note - 69) / 12);
+
+        for (const voice of this.voices) {
+            if (!voice.active) {
+                voice.note = note;
+                voice.freq = freq;
+                voice.glideFreq = freq;
+                voice.glideTarget = freq;
+                voice.active = true;
+                voice.velocity = vel;
+                for (const op of voice.ops) op.noteOn();
+                return;
+            }
+        }
+    }
+
+    noteOff(note) {
+        for (const voice of this.voices) {
+            if (voice.active && voice.note === note) {
+                for (const op of voice.ops) op.noteOff();
+            }
+        }
+    }
+
+    processAlgorithm(ops, freq, dt) {
+        const [op1, op2, op3, op4] = ops;
+        let out = 0;
+
+        switch (this.algorithm) {
+            case 0: // Op1 <- Op2 (simple FM)
+                out = op1.process(dt, freq, op2.process(dt, freq, 0));
+                break;
+            case 1: // Cascade: Op1 <- Op2 <- Op3
+                out = op1.process(dt, freq, op2.process(dt, freq, op3.process(dt, freq, 0)));
+                break;
+            case 2: // Parallel modulators: Op1 <- (Op2 + Op3)
+                const mod2 = op2.process(dt, freq, 0);
+                const mod3 = op3.process(dt, freq, 0);
+                out = op1.process(dt, freq, mod2 + mod3);
+                break;
+            case 3: // Dual carriers
+                out = op1.process(dt, freq, op2.process(dt, freq, 0)) +
+                      op3.process(dt, freq, op4.process(dt, freq, 0));
+                break;
+            case 4: // Independent pairs
+                out = (op1.process(dt, freq, op2.process(dt, freq, 0)) +
+                       op3.process(dt, freq, op4.process(dt, freq, 0))) * 0.5;
+                break;
+            case 5: // Mixed
+                out = op1.process(dt, freq, op2.process(dt, freq, 0)) + op3.process(dt, freq, 0) * 0.5;
+                break;
+            case 6: // Feedback add
+                out = op1.process(dt, freq, op2.process(dt, freq, 0)) + op3.process(dt, freq, op3.lastOut * 0.5);
+                break;
+            case 7: // Additive
+                out = (op1.process(dt, freq, 0) + op2.process(dt, freq, 0) +
+                       op3.process(dt, freq, 0) + op4.process(dt, freq, 0)) * 0.5;
+                break;
+        }
+
+        return out;
+    }
+
+    process(buf, n, sr) {
+        const dt = 1 / sr;
+
+        for (const voice of this.voices) {
+            if (!voice.active) continue;
+
+            // Check if all operators are idle
+            let anyActive = false;
+            for (const op of voice.ops) if (op.isActive()) anyActive = true;
+            if (!anyActive) { voice.active = false; continue; }
+
+            // Glide
+            if (this.glide > 0 && voice.glideFreq !== voice.glideTarget) {
+                const glideSpeed = dt / this.glide;
+                if (Math.abs(voice.glideTarget - voice.glideFreq) < 1) {
+                    voice.glideFreq = voice.glideTarget;
+                } else {
+                    voice.glideFreq += (voice.glideTarget - voice.glideFreq) * glideSpeed * 10;
+                }
+            }
+
+            for (let i = 0; i < n; i++) {
+                const sample = this.processAlgorithm(voice.ops, voice.glideFreq, dt) * voice.velocity;
+                buf[i * 2] += sample * this.masterVol * (1 - Math.max(0, this.pan));
+                buf[i * 2 + 1] += sample * this.masterVol * (1 + Math.min(0, this.pan));
+            }
+        }
+    }
+
+    reset() {
+        for (const voice of this.voices) {
+            voice.active = false;
+            for (const op of voice.ops) op.reset();
+        }
+    }
+}
+
 class JsEngine {
     constructor() {
         this.sampleRate = 44100;
@@ -225,12 +436,14 @@ class JsEngine {
     register(id, type, poly) {
         let inst;
         switch (type) {
-            case 0: inst = new JsSynth(id, poly); break;
-            case 1: inst = new JsDrum(id); break;
-            case 2: inst = new JsFx(id); break;
+            case 0: inst = new JsSynth(id, poly); break;      // Standard synth
+            case 1: inst = new JsDrum(id); break;              // Drum
+            case 2: inst = new JsFx(id); break;                // FX processor
+            case 3: inst = new JsFmSynth(id, poly || 4); break; // FM Synth (new!)
             default: return false;
         }
         this.instruments.set(id, inst);
+        console.log(`[JS Engine] Created instrument type ${type}, id ${id}`);
         return true;
     }
     setParameter(id, p, v) { this.instruments.get(id)?.setParameter(p, v); }

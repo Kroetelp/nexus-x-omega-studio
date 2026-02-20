@@ -15,8 +15,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noImplicitReturns": false,
-    "noFallthroughCasesInSwitch": false,
-    "suppressExcessPropertyErrors": true
+    "noFallthroughCasesInSwitch": false
   },
   "include": ["src/**/*.ts"],
   "exclude": [

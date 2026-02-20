@@ -7,6 +7,7 @@ import { InstrumentController } from '../instruments/InstrumentController';
 import { SynthController } from '../instruments/SynthController';
 import { DrumController, DrumType } from '../instruments/DrumController';
 import { FxController } from '../instruments/FxController';
+import { FmSynthController } from '../instruments/FmSynthController';
 import {
     InstrumentConfig,
     InstrumentType,
@@ -100,6 +101,10 @@ export class InstrumentRegistry {
                 controller = new FxController(config);
                 break;
 
+            case 'fm':
+                controller = new FmSynthController(config);
+                break;
+
             default:
                 throw new Error(`[InstrumentRegistry] Unknown instrument type: ${type}`);
         }
@@ -161,6 +166,13 @@ export class InstrumentRegistry {
      */
     getFx(id: number): FxController | undefined {
         return this.getInstrument<FxController>(id);
+    }
+
+    /**
+     * Get an FM synth by ID (typed)
+     */
+    getFmSynth(id: number): FmSynthController | undefined {
+        return this.getInstrument<FmSynthController>(id);
     }
 
     /**
@@ -269,6 +281,15 @@ export class InstrumentRegistry {
     // ============================================================
 
     /**
+     * Get all FM synth IDs
+     */
+    getFmSynthIds(): number[] {
+        return this.getAllInstruments()
+            .filter(inst => inst.type === 'fm')
+            .map(inst => inst.id);
+    }
+
+    /**
      * Create default instrument setup for NEXUS-X
      * Returns an object with references to all created instruments
      */
@@ -280,6 +301,7 @@ export class InstrumentRegistry {
         bass: SynthController;
         lead: SynthController;
         pad: SynthController;
+        fm: FmSynthController;
         fxBus: FxController;
     } {
         // Clear existing
@@ -296,6 +318,9 @@ export class InstrumentRegistry {
         const lead = this.createInstrument('synth', 'Lead', { polyphony: 8, id: 6 }) as SynthController;
         const pad = this.createInstrument('synth', 'Pad', { polyphony: 4, id: 7 }) as SynthController;
 
+        // Create FM synth
+        const fm = this.createInstrument('fm', 'FM Bell', { polyphony: 4, id: 8 }) as FmSynthController;
+
         // Create FX bus
         const fxBus = this.createInstrument('fx', 'Master FX', { id: 99 }) as FxController;
 
@@ -306,7 +331,7 @@ export class InstrumentRegistry {
 
         console.log('[InstrumentRegistry] Default setup created');
 
-        return { kick, snare, clap, hihat, bass, lead, pad, fxBus };
+        return { kick, snare, clap, hihat, bass, lead, pad, fm, fxBus };
     }
 
     // ============================================================
@@ -337,7 +362,8 @@ export class InstrumentRegistry {
             synth: 0,
             drum: 1,
             fx: 2,
-            sampler: 3,
+            fm: 3,
+            sampler: 4,
             pad: 0,  // Pad is a type of synth
         };
         return types[type] ?? 0;
