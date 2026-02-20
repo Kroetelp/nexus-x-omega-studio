@@ -2037,9 +2037,9 @@ class AudioEngine {
             await nativeCtx.audioWorklet.addModule('processor.js');
             dbg('audio', 'AudioWorklet module loaded');
 
-            // Create the Bitcrusher node
-            this.bitcrusherNode = new AudioWorkletNode(nativeCtx, 'nexus-bitcrusher');
-            dbg('audio', 'Bitcrusher node created ✓');
+            // Create the DSP Engine node
+            this.bitcrusherNode = new AudioWorkletNode(nativeCtx, 'nexus-dsp-engine');
+            dbg('audio', 'DSP Engine node created ✓');
 
             // Create a MediaStreamAudioSourceNode to connect Tone.js to our context
             // Route: Tone.Destination -> MediaStream -> Our Context -> Bitcrusher
@@ -2066,20 +2066,22 @@ class AudioEngine {
                 if (response.ok) {
                     const wasmBytes = await response.arrayBuffer();
                     const wasmModule = await WebAssembly.compile(wasmBytes);
-                    this.bitcrusherNode.port.postMessage({ type: 'load-wasm', wasmModule });
+                    // Use numeric message type: LOAD_WASM = 5
+                    this.bitcrusherNode.port.postMessage({ type: 5, wasmModule });
                     dbg('audio', 'WASM DSP loaded ✓');
                 }
             } catch (e) {
                 dbg('audio', 'DSP running in JS mode (WASM not found)');
             }
 
-            // Store reference to control parameters later via macros
-            this.bitcrusherParamDepth = this.bitcrusherNode.parameters.get('bitDepth');
-            this.bitcrusherParamFreq = this.bitcrusherNode.parameters.get('frequencyReduction');
-            this.bitcrusherParamEnabled = this.bitcrusherNode.parameters.get('enabled');
+            // Note: New v5.0 engine uses message-based parameters, not AudioParams
+            // For backwards compat, store reference to worklet
+            this.bitcrusherParamDepth = null;
+            this.bitcrusherParamFreq = null;
+            this.bitcrusherParamEnabled = null;
 
-            UIController.toast("DSP: BITCRUSHER WORKLET ACTIVE");
-            dbg('audio', 'Bitcrusher fully initialized ✓');
+            UIController.toast("DSP: ENGINE v5.0 ACTIVE (JS Fallback)");
+            dbg('audio', 'DSP Engine v5.0 initialized ✓');
 
         } catch (e) {
             dbg('audio', '⚠️ Worklet failed, using fallback:', e.message);
