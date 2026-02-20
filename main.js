@@ -5779,13 +5779,15 @@ function showSimplePianoRoll() {
                     🎹 PIANO ROLL EDITOR <span style="color:#666;font-size:11px;">Simple Mode</span>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button onclick="this.closest('dialog').close()" style="background: var(--primary); border: none; color: #000; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: 700;">✓ Done</button>
+                    <button id="pianoRollApplyBtn" style="background: var(--primary); border: none; color: #000; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: 700;">▶ Apply to Track</button>
+                    <button id="pianoRollPlayBtn" style="background: #00ccff; border: none; color: #000; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: 700;">▶ Preview</button>
+                    <button onclick="this.closest('dialog').close()" style="background: transparent; border: 1px solid #444; color: #666; padding: 8px 20px; border-radius: 4px; cursor: pointer;">Done</button>
                     <button onclick="this.closest('dialog').remove()" style="background: transparent; border: 1px solid #444; color: #666; width: 30px; height: 30px; border-radius: 4px; cursor: pointer;">✕</button>
                 </div>
             </div>
             <div id="simple-piano-container" style="flex: 1; position: relative; overflow: hidden;"></div>
             <div style="padding: 8px 20px; background: #0a0a0a; border-top: 1px solid #222; font-size: 11px; color: #666; font-family: 'JetBrains Mono', monospace;">
-                Click on the grid to add notes. Double-click to remove. Scroll to navigate.
+                Click to add notes • Double-click to remove • Shift+drag to resize • Drag to move | <span id="noteCount">0</span> notes
             </div>
         </div>
     `;
@@ -5972,6 +5974,88 @@ function showSimplePianoRoll() {
 
     render();
     console.log('[PianoRoll] Simple mode loaded');
+
+    // Update note count
+    function updateNoteCount() {
+        const countEl = document.getElementById('noteCount');
+        if (countEl) countEl.textContent = notes.length;
+    }
+
+    // Apply to sequencer function
+    window.applyPianoRollToSequencer = function() {
+        if (!window.seq || notes.length === 0) {
+            if (window.UIController?.toast) {
+                window.UIController.toast('⚠️ No notes to apply');
+            }
+            return;
+        }
+
+        // Convert piano roll notes to sequencer grid (track 5 = Lead/Arp)
+        // Each note maps to a step activation
+        const leadTrack = window.seq.data[5];
+        leadTrack.fill(0); // Clear existing
+
+        notes.forEach(note => {
+            // Map 64-beat grid to 32-step grid
+            const step = Math.floor((note.start / TOTAL_BEATS) * 32);
+            if (step >= 0 && step < 32) {
+                leadTrack[step] = 1;
+            }
+        });
+
+        // Refresh grid
+        if (window.ui?.refreshGrid) {
+            window.ui.refreshGrid();
+        }
+
+        if (window.UIController?.toast) {
+            window.UIController.toast(`✓ Applied ${notes.length} notes to Lead track`);
+        }
+
+        console.log('[PianoRoll] Applied', notes.length, 'notes to sequencer');
+    };
+
+    // Preview function - play the notes
+    window.previewPianoRoll = function() {
+        if (notes.length === 0) return;
+
+        const sortedNotes = [...notes].sort((a, b) => a.start - b.start);
+        const tempo = Tone.Transport.bpm.value || 128;
+        const beatDuration = 60 / tempo;
+
+        sortedNotes.forEach(note => {
+            const time = note.start * beatDuration / 4; // Convert to seconds
+            setTimeout(() => {
+                if (window.engine?.noteOn) {
+                    window.engine.noteOn(note.pitch, note.velocity / 127);
+                    setTimeout(() => window.engine.noteOff?.(note.pitch), note.duration * beatDuration * 250);
+                }
+            }, time * 1000);
+        });
+
+        if (window.UIController?.toast) {
+            window.UIController.toast('▶ Previewing notes...');
+        }
+    };
+
+    // Connect buttons
+    const applyBtn = document.getElementById('pianoRollApplyBtn');
+    if (applyBtn) {
+        applyBtn.onclick = window.applyPianoRollToSequencer;
+    }
+
+    const playBtn = document.getElementById('pianoRollPlayBtn');
+    if (playBtn) {
+        playBtn.onclick = window.previewPianoRoll;
+    }
+
+    // Update note count on changes
+    const originalRender = render;
+    render = function() {
+        originalRender();
+        updateNoteCount();
+    };
+    updateNoteCount();
 }
 
 // ============================================================
@@ -6810,7 +6894,32 @@ function createFallbackNeuralVisualizer() {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const energy = (Math.sin(time * 2) + 1) / 2 * 0.5 + (Math.sin(time * 5) + 1) / 2 * 0.3;
+        // Get real audio data from Tone.js analyser
+        let energy = 0;
+        let fftData = null;
+
+        if (window.engine && window.engine.analyser) {
+            try {
+                fftData = window.engine.analyser.getValue();
+                if (fftData && fftData.length > 0) {
+                    // Calculate energy from FFT data
+                    let sum = 0;
+                    for (let i = 0; i < fftData.length; i++) {
+                        // Normalize from dB to 0-1 range
+                        const val = Math.max(0, (fftData[i] + 100) / 100);
+                        sum += val;
+                    }
+                    energy = sum / fftData.length;
+                }
+            } catch(e) {
+                // Fallback to simulated energy
+            }
+        }
+
+        // Fallback if no audio data
+        if (energy === 0 || !fftData) {
+            energy = (Math.sin(time * 2) + 1) / 2 * 0.5 + (Math.sin(time * 5) + 1) / 2 * 0.3;
+        }
 
         // Draw connections between nodes
         ctx.strokeStyle = 'rgba(0, 255, 148, 0.1)';
@@ -6827,13 +6936,19 @@ function createFallbackNeuralVisualizer() {
         });
 
         // Draw particles
-        particles.forEach(p => {
+        particles.forEach((p, idx) => {
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
             const dx = centerX - p.x;
             const dy = centerY - p.y;
             const angle = Math.atan2(dy, dx) + Math.PI / 2;
             const speed = (1 + energy * 3);
+
+            // Use FFT data for individual particle if available
+            let particleEnergy = energy;
+            if (fftData && idx < fftData.length) {
+                particleEnergy = Math.max(0, (fftData[idx] + 100) / 100);
+            }
 
             p.vx += Math.cos(angle) * speed * 0.05;
             p.vy += Math.sin(angle) * speed * 0.05;
@@ -6845,17 +6960,25 @@ function createFallbackNeuralVisualizer() {
             if (p.x < 0 || p.x > canvas.width) p.x = centerX + (Math.random() - 0.5) * 100;
             if (p.y < 0 || p.y > canvas.height) p.y = centerY + (Math.random() - 0.5) * 100;
 
-            const alpha = 0.5 + energy * 0.5;
+            const alpha = 0.5 + particleEnergy * 0.5;
             ctx.fillStyle = `hsla(${p.hue + time * 50}, 100%, 60%, ${alpha})`;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * (1 + energy), 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, p.size * (1 + particleEnergy), 0, Math.PI * 2);
             ctx.fill();
         });
 
-        // Draw neural nodes
-        nodes.forEach(node => {
+        // Draw neural nodes with FFT data
+        nodes.forEach((node, idx) => {
             const pulse = Math.sin(time * 3 + node.phase) * 0.5 + 0.5;
-            const activation = energy + pulse * 0.3;
+
+            // Use FFT data for individual node if available
+            let nodeEnergy = energy;
+            if (fftData) {
+                const fftIdx = idx % fftData.length;
+                nodeEnergy = Math.max(0, (fftData[fftIdx] + 100) / 100);
+            }
+
+            const activation = nodeEnergy + pulse * 0.3;
 
             // Glow
             const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, 30 + activation * 20);
@@ -6885,6 +7008,17 @@ function createFallbackNeuralVisualizer() {
         ctx.beginPath();
         ctx.arc(canvas.width / 2, canvas.height / 2, pulseSize, 0, Math.PI * 2);
         ctx.fill();
+
+        // Draw frequency bars at bottom
+        if (fftData && fftData.length > 0) {
+            const barWidth = canvas.width / fftData.length;
+            ctx.fillStyle = 'rgba(0, 255, 148, 0.3)';
+            for (let i = 0; i < fftData.length; i++) {
+                const val = Math.max(0, (fftData[i] + 100) / 100);
+                const barHeight = val * 50;
+                ctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth - 1, barHeight);
+            }
+        }
 
         animationId = requestAnimationFrame(animate);
     }
@@ -6923,28 +7057,142 @@ window.openAIComposer = async function() {
 function applyAIComposition(composition) {
     if (!composition) return;
 
-    // Convert AI composition to sequencer format
-    const melodyTrack = composition.melody.map(n => ({
-        note: n.note,
-        time: n.startTime,
-        duration: n.duration,
-        velocity: n.velocity
-    }));
-
-    // Update the arranger if available
-    if (window.arranger) {
-        window.arranger.aiComposition = composition;
-        if (window.UIController?.toast) {
-            window.UIController.toast(`✓ AI Composition loaded: ${composition.melody.length} notes`);
-        }
-    }
-
-    console.log('[AIComposer] Applied composition:', {
+    console.log('[AIComposer] Applying composition:', {
         melodyNotes: composition.melody.length,
         harmonyNotes: composition.harmony.length,
         bassNotes: composition.bass.length,
         structure: composition.structure.length + ' sections'
     });
+
+    // Get tempo
+    const tempo = composition.prompt?.tempo || 128;
+    const beatDuration = 60 / tempo;
+    const stepDuration = beatDuration / 4; // 16th notes
+    const totalSteps = 128; // 32 bars * 4 beats
+
+    // Create new bank
+    const bank = window.seq.getEmptyBank();
+
+    // Track mapping:
+    // 0: Kick, 1: Snare, 2: Clap, 3: HiHat
+    // 4: Bass, 5: Lead/Arp, 6: Pad/Chord
+
+    // Convert drums to grid
+    if (composition.drums) {
+        // Kick
+        if (composition.drums.kick) {
+            composition.drums.kick.forEach(step => {
+                if (step >= 0 && step < totalSteps) bank[0][step] = 1;
+            });
+        }
+        // Snare
+        if (composition.drums.snare) {
+            composition.drums.snare.forEach(step => {
+                if (step >= 0 && step < totalSteps) bank[1][step] = 1;
+            });
+        }
+        // Clap
+        if (composition.drums.clap) {
+            composition.drums.clap.forEach(step => {
+                if (step >= 0 && step < totalSteps) bank[2][step] = 1;
+            });
+        }
+        // HiHat
+        if (composition.drums.hihat) {
+            composition.drums.hihat.forEach(step => {
+                if (step >= 0 && step < totalSteps) bank[3][step] = 1;
+            });
+        }
+    }
+
+    // Convert bass to grid (track 4)
+    if (composition.bass && composition.bass.length > 0) {
+        composition.bass.forEach(note => {
+            const startStep = Math.floor(note.startTime / stepDuration);
+            const endStep = Math.floor((note.startTime + note.duration) / stepDuration);
+            for (let s = startStep; s < Math.min(endStep, totalSteps); s++) {
+                if (s >= 0 && s < totalSteps) bank[4][s] = 1;
+            }
+        });
+    }
+
+    // Convert melody to grid (track 5)
+    if (composition.melody && composition.melody.length > 0) {
+        composition.melody.forEach(note => {
+            const startStep = Math.floor(note.startTime / stepDuration);
+            if (startStep >= 0 && startStep < totalSteps) {
+                bank[5][startStep] = 1;
+            }
+        });
+    }
+
+    // Convert harmony to grid (track 6)
+    if (composition.harmony && composition.harmony.length > 0) {
+        composition.harmony.forEach(note => {
+            const startStep = Math.floor(note.startTime / stepDuration);
+            if (startStep >= 0 && startStep < totalSteps) {
+                bank[6][startStep] = 1;
+            }
+        });
+    }
+
+    // Apply to first 32 steps (one pattern)
+    const visibleBank = bank.map(track => track.slice(0, 32));
+
+    // Set tempo if player exists
+    if (window.player) {
+        try {
+            Tone.Transport.bpm.value = tempo;
+        } catch(e) {}
+    }
+
+    // Apply to sequencer
+    window.seq.data = visibleBank;
+    window.seq.snapshots[0] = JSON.parse(JSON.stringify(visibleBank));
+
+    // Store full composition for arranger
+    if (window.arranger) {
+        window.arranger.aiComposition = composition;
+    }
+
+    // Refresh UI
+    if (window.ui && window.ui.refreshGrid) {
+        window.ui.refreshGrid();
+    }
+
+    // Update genre selector if matching genre
+    const genre = (composition.prompt?.genre || 'techno').toUpperCase();
+    const genreSelect = document.getElementById('genreSelect');
+    if (genreSelect) {
+        const options = genreSelect.options;
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].value === genre || options[i].text.toUpperCase() === genre) {
+                genreSelect.value = options[i].value;
+                break;
+            }
+        }
+    }
+
+    // Show success message
+    if (window.UIController?.toast) {
+        window.UIController.toast(`✓ AI Composition loaded: ${composition.melody.length} notes, ${tempo} BPM`);
+    }
+
+    console.log('[AIComposer] Composition applied to sequencer');
+
+    // Auto-play if not already playing
+    if (window.player && !window.player.isPlaying) {
+        setTimeout(() => {
+            try {
+                window.player.toggle();
+                if (window.UIController?.toast) {
+                    window.UIController.toast(`▶ Playing AI Composition...`);
+                }
+            } catch(e) {
+                console.log('[AIComposer] Auto-play failed:', e);
+            }
+        }, 500);
+    }
 }
 
 function createFallbackAIComposer() {
