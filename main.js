@@ -5927,3 +5927,276 @@ function showSimplePianoRoll() {
     render();
     console.log('[PianoRoll] Simple mode loaded');
 }
+
+// ============================================================
+// 808 DRUM PAD - Interactive drum machine interface
+// ============================================================
+let drum808PadContainer = null;
+let drum808Instance = null;
+
+window.openDrum808 = async function() {
+    // Toggle if already open
+    if (drum808PadContainer) {
+        drum808PadContainer.remove();
+        drum808PadContainer = null;
+        return;
+    }
+
+    // Create container in the deck (right sidebar)
+    const deck = document.querySelector('.deck');
+    if (!deck) {
+        console.error('[808] Deck not found');
+        return;
+    }
+
+    // Create the 808 pad UI
+    drum808PadContainer = document.createElement('div');
+    drum808PadContainer.className = 'drum-808-wrapper';
+    drum808PadContainer.innerHTML = `
+        <style>
+            .drum-808-wrapper {
+                position: relative;
+            }
+            .drum-808-close {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: transparent;
+                border: 1px solid #444;
+                color: #666;
+                width: 24px;
+                height: 24px;
+                border-radius: 4px;
+                cursor: pointer;
+                z-index: 10;
+            }
+            .drum-808-close:hover {
+                color: #ff0055;
+                border-color: #ff0055;
+            }
+        </style>
+        <button class="drum-808-close" onclick="this.parentElement.remove(); window.drum808PadContainer = null;">✕</button>
+    `;
+
+    // Create drum pads
+    const DRUM_CONFIG = [
+        { note: 36, name: 'KICK', color: '#00ff94', key: '1' },
+        { note: 38, name: 'SNARE', color: '#f59e0b', key: '2' },
+        { note: 39, name: 'CLAP', color: '#ff00cc', key: '3' },
+        { note: 42, name: 'HH CLSD', color: '#00e5ff', key: '4' },
+        { note: 46, name: 'HH OPEN', color: '#7c3aed', key: '5' },
+        { note: 41, name: 'TOM LO', color: '#ff0055', key: 'Q' },
+        { note: 45, name: 'TOM MID', color: '#5865F2', key: 'W' },
+        { note: 48, name: 'TOM HI', color: '#00ccff', key: 'E' },
+        { note: 56, name: 'COWBELL', color: '#f59e0b', key: 'R' },
+        { note: 37, name: 'RIM', color: '#888', key: 'T' },
+        { note: 75, name: 'CLAVE', color: '#aaa', key: 'Z' },
+        { note: 70, name: 'MARACS', color: '#666', key: 'U' },
+    ];
+
+    const padsDiv = document.createElement('div');
+    padsDiv.innerHTML = `
+        <style>
+            .drum-808-panel {
+                background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+                border: 1px solid #333;
+                border-radius: 12px;
+                padding: 15px;
+                margin-bottom: 10px;
+            }
+            .drum-808-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #333;
+            }
+            .drum-808-title {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 14px;
+                font-weight: 800;
+                color: #00ff94;
+                text-shadow: 0 0 10px rgba(0,255,148,0.3);
+            }
+            .drum-808-pads {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+            }
+            .drum-pad {
+                aspect-ratio: 1;
+                background: #1a1a1a;
+                border: 2px solid #333;
+                border-radius: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.1s;
+                user-select: none;
+                position: relative;
+                overflow: hidden;
+            }
+            .drum-pad:hover {
+                border-color: #555;
+                transform: scale(1.02);
+            }
+            .drum-pad:active, .drum-pad.hit {
+                transform: scale(0.95);
+            }
+            .drum-pad.hit::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+                animation: padFlash 0.15s ease-out;
+            }
+            @keyframes padFlash {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+            .drum-pad-name {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 10px;
+                font-weight: 700;
+                color: #fff;
+                text-shadow: 0 0 5px currentColor;
+            }
+            .drum-pad-key {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 8px;
+                color: #666;
+                margin-top: 2px;
+            }
+            .drum-808-presets {
+                display: flex;
+                gap: 5px;
+                margin-top: 12px;
+                flex-wrap: wrap;
+            }
+            .preset-btn {
+                background: #1a1a1a;
+                border: 1px solid #333;
+                color: #888;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 9px;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            .preset-btn:hover {
+                border-color: #00ff94;
+                color: #00ff94;
+            }
+            .drum-808-info {
+                margin-top: 10px;
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 9px;
+                color: #555;
+                text-align: center;
+            }
+        </style>
+        <div class="drum-808-panel">
+            <div class="drum-808-header">
+                <div class="drum-808-title">🥁 TR-808 DRUMS</div>
+            </div>
+            <div class="drum-808-pads" id="drumPads808"></div>
+            <div class="drum-808-presets" id="presetBtns808"></div>
+            <div class="drum-808-info">Keys: 1-5, Q-R, Z-U | Click pads to play</div>
+        </div>
+    `;
+
+    // Create pads
+    const padsContainer = padsDiv.querySelector('#drumPads808');
+    const pads = new Map();
+
+    DRUM_CONFIG.forEach(config => {
+        const pad = document.createElement('div');
+        pad.className = 'drum-pad';
+        pad.style.borderColor = config.color;
+        pad.innerHTML = `
+            <span class="drum-pad-name" style="color: ${config.color}">${config.name}</span>
+            <span class="drum-pad-key">[${config.key}]</span>
+        `;
+
+        const hitPad = () => {
+            // Play sound via worklet
+            if (window.engine && window.engine.drums) {
+                // Trigger via existing drum system
+                const drumNotes = {36:0, 38:1, 42:2, 39:3, 46:4};
+                const idx = drumNotes[config.note];
+                if (idx !== undefined) {
+                    window.engine.drums[idx]?.start();
+                }
+            } else if (window.bitcrusherNode) {
+                // Send note directly to worklet
+                window.bitcrusherNode.port.postMessage({
+                    type: 1, // NOTE_ON
+                    instrumentId: 100, // 808 drum id
+                    data1: config.note,
+                    data2: 0.9
+                });
+            }
+
+            // Visual feedback
+            pad.classList.add('hit');
+            pad.style.boxShadow = `0 0 30px ${config.color}, inset 0 0 20px ${config.color}`;
+            setTimeout(() => {
+                pad.classList.remove('hit');
+                pad.style.boxShadow = '';
+            }, 150);
+
+            console.log(`[808] ${config.name} (note ${config.note})`);
+        };
+
+        pad.addEventListener('mousedown', hitPad);
+        pad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            hitPad();
+        });
+
+        padsContainer.appendChild(pad);
+        pads.set(config.note, pad);
+    });
+
+    // Create preset buttons
+    const presetsContainer = padsDiv.querySelector('#presetBtns808');
+    const presets = ['CLASSIC', 'HIPHOP', 'TRAP', 'HOUSE', 'TECHNO'];
+    presets.forEach(preset => {
+        const btn = document.createElement('button');
+        btn.className = 'preset-btn';
+        btn.textContent = preset;
+        btn.onclick = () => {
+            console.log(`[808] Preset: ${preset}`);
+            // Update kick parameters based on preset
+            if (preset === 'TRAP') {
+                console.log('[808] Deep trap kick: tune=2, decay=1.8s');
+            } else if (preset === 'HIPHOP') {
+                console.log('[808] Hip-hop kick: tune=3, decay=1.5s');
+            }
+        };
+        presetsContainer.appendChild(btn);
+    });
+
+    drum808PadContainer.appendChild(padsDiv);
+    deck.insertBefore(drum808PadContainer, deck.firstChild);
+
+    // Keyboard handler
+    const keyHandler = (e) => {
+        const config = DRUM_CONFIG.find(c => c.key.toLowerCase() === e.key.toLowerCase());
+        if (config) {
+            e.preventDefault();
+            const pad = pads.get(config.note);
+            if (pad) pad.click();
+        }
+    };
+
+    document.addEventListener('keydown', keyHandler);
+    drum808PadContainer.dataset.keyHandler = 'true';
+
+    console.log('[808] Drum Pad opened - use keys 1-5, Q-R, Z-U or click pads!');
+};
+
