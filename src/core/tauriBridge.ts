@@ -100,8 +100,9 @@ class TauriBridge {
                     break;
 
                 case 'TRANSPORT_SET_BPM':
-                    await invokeFn('set_bpm', { bpm: state.transport.bpm });
-                    log.debug(`[TAURI] BPM: ${state.transport.bpm}`);
+                    // Rust expects u64, ensure integer
+                    await invokeFn('set_bpm', { bpm: Math.round(state.transport.bpm) });
+                    log.debug(`[TAURI] BPM: ${Math.round(state.transport.bpm)}`);
                     break;
 
                 // Mixer
