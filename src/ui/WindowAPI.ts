@@ -15,7 +15,7 @@ import { AutoArranger, createAutoArranger } from '../sequencer/AutoArranger';
 import { PatternProcessor, createPatternProcessor } from '../sequencer/PatternProcessor';
 import { ScaleLocker, createScaleLocker } from '../music-theory/ScaleLocker';
 import { ChordGenerator, createChordGenerator } from '../music-theory/ChordGenerator';
-import { audioEngine } from '../audio/core/AudioEngineNew';
+import { audioEngine } from '../audio/core/AudioEngine';
 import { loggers } from '../utils/logger';
 
 const log = loggers.system;

@@ -4,7 +4,7 @@
  */
 
 import * as Tone from 'tone';
-import { audioEngine } from '../audio/core/AudioEngineNew';
+import { audioEngine } from '../audio/core/AudioEngine';
 import { loggers } from '../utils/logger';
 import { createEmptyPattern, TRACKS } from '../sequencer/patternUtils';
 import { TRACK_NAMES, NUM_TRACKS, STEPS_PER_PATTERN, TRACK_COLORS } from '../config/index';

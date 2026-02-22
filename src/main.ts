@@ -14,7 +14,7 @@ import { spectralWorkbench } from './core/SpectralWorkbench.js';
 import { performanceRecorder } from './core/PerformanceRecorder.js';
 import { aiProgressDialog, AISteps } from './core/AIProgressDialog.js';
 import { automationFeedback } from './ui/AutomationFeedback.js';
-import { audioEngine } from './audio/core/AudioEngineNew.js';
+import { audioEngine } from './audio/core/AudioEngine.js';
 
 // --- AI ENGINE (New Module Structure) ---
 import { neuralDream } from './ai-engine/NeuralDream.js';
@@ -69,7 +69,7 @@ class NexusSystem {
   private currentGenre = DEFAULT_GENRE;
   private humanizeActive = false;
   private themeLocked = false;
-  private audioEngine: import('./audio/core/AudioEngineNew').AudioEngine | null = null;
+  private audioEngine: import('./audio/core/AudioEngine').AudioEngine | null = null;
   private sequencerData: number[][] = [];
   private arranger: import('./sequencer/AutoArranger').AutoArranger | null = null;
   private isInitialized = false;
@@ -162,7 +162,7 @@ class NexusSystem {
   private async initializeAudioEngine(): Promise<void> {
     log.debug('Initializing Audio Engine...');
 
-    // Use the modular AudioEngine from audio/core/AudioEngineNew.ts
+    // Use the modular AudioEngine from audio/core/AudioEngine.ts
     try {
       await audioEngine.initialize();
       this.audioEngine = audioEngine;

@@ -6,7 +6,7 @@
 // ============================================================
 // CORE
 // ============================================================
-export { AudioEngine, audioEngine } from './core/AudioEngineNew';
+export { AudioEngine, audioEngine } from './core/AudioEngine';
 export { InstrumentRegistry, instrumentRegistry } from './core/InstrumentRegistry';
 export { ScaleManager, scaleManager } from './core/ScaleManager';
 
