@@ -866,6 +866,7 @@ function generateSectionPattern(sectionType: string, sectionIndex: number): numb
 
 /**
  * Get the current pattern based on song position
+ * SMOOTH TRANSITIONS: Only switch patterns at bar boundaries
  */
 function getCurrentPattern(): number[][] {
     if (songStructure.length === 0) {
@@ -886,11 +887,14 @@ function getCurrentPattern(): number[][] {
         if (currentBar < barsElapsed + section.bars) {
             // We're in this section
             if (currentSectionIndex !== i) {
-                currentSectionIndex = i;
-                log.debug(' Entered section:', section.name, `(bar ${currentBar + 1}/${totalBars})`);
-                updateMinimapHighlight(i);
-                // UPDATE GRID UI to show current section pattern
-                updateGridFromPattern(section.pattern);
+                // SMOOTH TRANSITION: Only switch at bar boundaries (step 0)
+                if (currentStep === 0) {
+                    currentSectionIndex = i;
+                    log.debug(' Entered section:', section.name, `(bar ${currentBar + 1}/${totalBars})`);
+                    updateMinimapHighlight(i);
+                    // UPDATE GRID UI to show current section pattern
+                    updateGridFromPattern(section.pattern);
+                }
             }
             return section.pattern;
         }
@@ -1221,14 +1225,12 @@ export function startSequencer(): void {
     totalStepsPlayed = 0;
 
     const bpm = Tone.Transport.bpm.value;
-    const stepDuration = (60 / bpm) / 4 * 1000; // 16th note in ms
 
     // Dispatch BPM to Store
     appStore.dispatch({ type: 'TRANSPORT_SET_BPM', payload: bpm });
 
     log.debug(' Starting sequencer:');
     log.debug(' - BPM:', bpm);
-    log.debug(' - Step duration (ms):', stepDuration);
     log.debug(' - Song sections:', songStructure.length);
 
     if (songStructure.length > 0) {
@@ -1247,8 +1249,16 @@ export function startSequencer(): void {
     // Sync pattern to Store
     appStore.dispatch({ type: 'SEQUENCER_SET_PATTERN', payload: localSequencerData });
 
-    sequencerInterval = window.setInterval(() => {
-        playStep(currentStep);
+    // Use Tone.Transport for SAMPLE-ACCURATE timing instead of setInterval
+    // This ensures BPM is actually correct and stays synchronized
+    Tone.Transport.cancel();
+    Tone.Transport.bpm.value = bpm;
+    Tone.Transport.swingSubdivision = '16n';
+
+    // Schedule the sequencer loop - 16th notes
+    Tone.Transport.scheduleRepeat((time) => {
+        // Use the time provided by Tone.Transport for sample-accurate triggering
+        playStep(currentStep, time);
         currentStep = (currentStep + 1) % 32;
 
         // Dispatch step to Store
@@ -1259,9 +1269,12 @@ export function startSequencer(): void {
             currentBarInSection++;
             totalStepsPlayed += 16;
         }
-    }, stepDuration);
+    }, '16n', '0m'); // Repeat every 16th note, start immediately
 
-    log.debug(' ✓ Sequencer interval started');
+    // Start the transport
+    Tone.Transport.start();
+
+    log.debug(' ✓ Sequencer started with Tone.Transport (sample-accurate)');
 }
 
 export function stopSequencer(): void {
@@ -1269,10 +1282,11 @@ export function stopSequencer(): void {
     appStore.dispatch({ type: 'TRANSPORT_STOP' });
 
     isPlaying = false;
-    if (sequencerInterval) {
-        clearInterval(sequencerInterval);
-        sequencerInterval = null;
-    }
+
+    // Stop Tone.Transport
+    Tone.Transport.stop();
+    Tone.Transport.cancel();
+
     currentStep = 0;
 
     // Remove all highlights (use cached buttons)
@@ -1283,7 +1297,7 @@ export function stopSequencer(): void {
     log.debug(' Sequencer stopped');
 }
 
-function playStep(step: number): void {
+function playStep(step: number, time?: number): void {
     // Get current pattern (either from song structure or local data)
     const currentPattern = getCurrentPattern();
 
@@ -1297,7 +1311,7 @@ function playStep(step: number): void {
     let soundsTriggered = 0;
     for (let trackIndex = 0; trackIndex < 7; trackIndex++) {
         if (currentPattern[trackIndex] && currentPattern[trackIndex][step] === 1) {
-            triggerSound(trackIndex, step);
+            triggerSound(trackIndex, step, time);
             soundsTriggered++;
         }
     }
@@ -1340,7 +1354,7 @@ function highlightStep(step: number): void {
     });
 }
 
-function triggerSound(trackIndex: number, step: number): void {
+function triggerSound(trackIndex: number, step: number, scheduledTime?: number): void {
     // Check if track is muted or should be silenced due to solo
     const channel = trackChannels[trackIndex];
     if (channel) {
@@ -1359,9 +1373,11 @@ function triggerSound(trackIndex: number, step: number): void {
     const scaleIndex = Math.floor(Math.random() * currentScale.length);
     const baseNote = currentScale[scaleIndex];
 
-    // Use slightly different time for each track to avoid NoiseSynth timing conflicts
-    // This prevents "Start time must be strictly greater than previous start time" errors
-    const time = Tone.now() + 0.001 * trackIndex;
+    // Use scheduled time from Tone.Transport (sample-accurate) or fallback
+    // Add small offset per track to avoid NoiseSynth timing conflicts
+    const time = scheduledTime !== undefined
+        ? scheduledTime + 0.001 * trackIndex
+        : Tone.now() + 0.001 * trackIndex;
 
     try {
         switch (trackIndex) {

@@ -81,8 +81,16 @@ class TauriBridge {
 
     /**
      * Handle store changes and sync to Rust
+     * NOTE: Rust audio is currently DISABLED because it's not synchronized with Tone.js
+     * The Rust engine runs at its own tempo, causing BPM mismatch issues.
+     * TODO: Re-enable when Rust audio is properly synchronized with Tone.Transport
      */
     private async handleStateChange(state: ReturnType<typeof appStore.getState>, action: { type: string; payload?: unknown }): Promise<void> {
+        // RUST AUDIO DISABLED - Not synchronized with Tone.js
+        // Uncomment below to re-enable (will cause BPM drift)
+        return;
+
+        /*
         const invokeFn = await getInvoke();
         if (!invokeFn) return;
 
@@ -158,6 +166,7 @@ class TauriBridge {
         } catch (error) {
             log.error('[TAURI] IPC error:', error);
         }
+        */
     }
 
     /**
