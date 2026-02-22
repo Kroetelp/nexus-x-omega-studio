@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod mixer;
+
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -9,6 +11,7 @@ use crossbeam_channel::{bounded, Receiver, Sender};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use cpal::traits::{HostTrait, DeviceTrait, StreamTrait};
+use mixer::{Mixer, EqBand};
 
 // ============================================================
 // AUDIO THREAD TYPES
@@ -43,6 +46,31 @@ struct TrackState {
 }
 
 // ============================================================
+// MASTER EFFECTS STATE
+// ============================================================
+
+#[derive(Clone)]
+struct MasterEffects {
+    eq_low: f64,    // dB
+    eq_mid: f64,    // dB
+    eq_high: f64,   // dB
+    limiter_threshold: f64,
+    clip_amount: f64,
+}
+
+impl Default for MasterEffects {
+    fn default() -> Self {
+        Self {
+            eq_low: 0.0,
+            eq_mid: 0.0,
+            eq_high: 0.0,
+            limiter_threshold: 0.95,
+            clip_amount: 2.0,
+        }
+    }
+}
+
+// ============================================================
 // AUDIO ENGINE (REAL-TIME THREAD)
 // ============================================================
 
@@ -74,9 +102,9 @@ impl AudioEngine {
     }
 
     fn run(self) {
-        println!("[AudioThread] Starting real-time audio engine");
+        println!("[AudioThread] Starting real-time audio engine with Mixer");
 
-        // Initialize cpal audio output (cpal 0.15+ API)
+        // Initialize cpal audio output
         let host = cpal::default_host();
 
         let device = match host.default_output_device() {
@@ -102,6 +130,9 @@ impl AudioEngine {
         let channels = supported_config.channels();
         let stream_config: cpal::StreamConfig = supported_config.into();
 
+        // Initialize mixer with master effects
+        let mixer = Arc::new(parking_lot::RwLock::new(Mixer::new(sample_rate as f64)));
+
         // Track states (volume, pan, muted, soloed) - 7 tracks
         let track_states: Arc<parking_lot::RwLock<Vec<TrackState>>> = Arc::new(
             parking_lot::RwLock::new(
@@ -116,18 +147,28 @@ impl AudioEngine {
             )
         );
 
+        // Master effects state
+        let master_effects = Arc::new(parking_lot::RwLock::new(MasterEffects::default()));
+
         let is_running_clone = self.is_running.clone();
         let current_step_clone = self.current_step.clone();
         let bpm_clone = self.bpm.clone();
         let command_rx_clone = self.command_rx.clone();
         let state_tx_clone = self.state_tx.clone();
 
-        // Master volume
-        let master_volume = Arc::new(parking_lot::RwLock::new(0.7));
+        let master_volume = Arc::new(parking_lot::RwLock::new(0.8));
         let master_volume_clone = master_volume.clone();
         let track_states_clone = track_states.clone();
+        let mixer_clone = mixer.clone();
+        let effects_clone = master_effects.clone();
 
         let err_fn = |err| eprintln!("[AudioThread] Stream error: {}", err);
+
+        // Oscillator phases for test synths
+        let phases: Arc<parking_lot::RwLock<Vec<f64>>> = Arc::new(
+            parking_lot::RwLock::new(vec![0.0; 7])
+        );
+        let phases_clone = phases.clone();
 
         let stream = match device.build_output_stream(
             &stream_config,
@@ -138,6 +179,7 @@ impl AudioEngine {
                         "set_volume" => {
                             if let Some(v) = cmd.value {
                                 *master_volume_clone.write() = v.clamp(0.0, 1.0);
+                                mixer_clone.write().master_volume = v.clamp(0.0, 1.0);
                             }
                         }
                         "set_track_volume" => {
@@ -177,6 +219,26 @@ impl AudioEngine {
                                 bpm_clone.store(v as u64, Ordering::Relaxed);
                             }
                         }
+                        "set_eq_low" => {
+                            if let Some(v) = cmd.value {
+                                effects_clone.write().eq_low = v;
+                            }
+                        }
+                        "set_eq_mid" => {
+                            if let Some(v) = cmd.value {
+                                effects_clone.write().eq_mid = v;
+                            }
+                        }
+                        "set_eq_high" => {
+                            if let Some(v) = cmd.value {
+                                effects_clone.write().eq_high = v;
+                            }
+                        }
+                        "set_limiter" => {
+                            if let Some(v) = cmd.value {
+                                effects_clone.write().limiter_threshold = v;
+                            }
+                        }
                         "play" => {
                             is_running_clone.store(true, Ordering::Relaxed);
                         }
@@ -187,48 +249,89 @@ impl AudioEngine {
                     }
                 }
 
+                // Update mixer effects
+                {
+                    let effects = effects_clone.read();
+                    let mut mixer_guard = mixer_clone.write();
+                    mixer_guard.set_eq(effects.eq_low, effects.eq_mid, effects.eq_high);
+                    mixer_guard.set_limiter_threshold(effects.limiter_threshold);
+                    mixer_guard.set_clip_amount(effects.clip_amount);
+                }
+
                 // Calculate step timing
                 let bpm_val = bpm_clone.load(Ordering::Relaxed) as f64;
                 let samples_per_step = (sample_rate as f64 * 60.0) / (bpm_val * 4.0);
 
-                // Phase accumulators
-                let mut phase: f64 = 0.0;
+                // Step phase accumulator
                 let mut step_phase: f64 = 0.0;
+
+                // Get track states
+                let states = track_states_clone.read();
+                let any_soloed = states.iter().any(|s| s.soloed);
+
+                // Update phases
+                let mut phases_guard = phases_clone.write();
 
                 // Fill audio buffer
                 for frame in data.chunks_mut(channels as usize) {
-                    // Simple test tone - replace with actual synth DSP
-                    let sample = if is_running_clone.load(Ordering::Relaxed) {
-                        let freq = 220.0;
-                        let master_vol = *master_volume.read();
-                        let val = (phase * 2.0 * std::f64::consts::PI * freq / sample_rate as f64).sin();
-                        (val * master_vol * 0.15) as f32
+                    let (left, right) = if is_running_clone.load(Ordering::Relaxed) {
+                        // Generate samples for each track
+                        let track_samples: Vec<(f64, f64, f64, bool, bool)> = (0..7)
+                            .map(|i| {
+                                let state = &states[i];
+
+                                // Different frequencies for different tracks
+                                let freqs = [55.0, 110.0, 220.0, 440.0, 880.0, 1760.0, 3520.0];
+                                let freq = freqs[i];
+
+                                // Simple oscillator
+                                let sample = (phases_guard[i] * 2.0 * std::f64::consts::PI).sin();
+
+                                // Update phase
+                                phases_guard[i] += freq / sample_rate as f64;
+                                if phases_guard[i] >= 1.0 {
+                                    phases_guard[i] -= 1.0;
+                                }
+
+                                (sample, state.volume, state.pan, state.muted, state.soloed)
+                            })
+                            .collect();
+
+                        // Mix all tracks
+                        let mixer_guard = mixer_clone.read();
+                        let (l, r) = mixer_guard.mix_channels(&track_samples, any_soloed);
+
+                        // Drop guard before mutable access
+                        drop(mixer_guard);
+
+                        (l, r)
                     } else {
-                        0.0
+                        (0.0, 0.0)
                     };
 
-                    phase += 1.0;
-                    if phase >= sample_rate as f64 {
-                        phase = 0.0;
+                    // Process through master bus
+                    let mut mixer_guard = mixer_clone.write();
+                    let (out_l, out_r) = mixer_guard.process_master(left, right);
+
+                    // Output stereo
+                    if frame.len() >= 2 {
+                        frame[0] = out_l;
+                        frame[1] = out_r;
+                    } else if frame.len() == 1 {
+                        frame[0] = (out_l + out_r) * 0.5;
                     }
 
-                    // Update step counter for sequencer sync
+                    // Update step counter
                     step_phase += 1.0;
                     if step_phase >= samples_per_step {
                         step_phase = 0.0;
                         let step = current_step_clone.fetch_add(1, Ordering::Relaxed);
-                        // Send state update (non-blocking)
                         let _ = state_tx_clone.try_send(AudioState {
                             is_playing: is_running_clone.load(Ordering::Relaxed),
                             current_step: ((step + 1) % 32) as usize,
                             bpm: bpm_clone.load(Ordering::Relaxed),
                             cpu_usage: 0.0,
                         });
-                    }
-
-                    // Stereo output
-                    for sample_out in frame.iter_mut() {
-                        *sample_out = sample;
                     }
                 }
             },
@@ -249,6 +352,7 @@ impl AudioEngine {
         }
 
         println!("[AudioThread] Audio stream running at {} Hz, {} channels", sample_rate, channels);
+        println!("[AudioThread] Mixer with 3-band EQ + Limiter + SoftClip active");
 
         // Keep thread alive
         loop {
@@ -373,6 +477,58 @@ fn set_bpm(state: State<AppState>, bpm: u64) -> Result<String, String> {
     Ok(format!("BPM set to {}", bpm))
 }
 
+// ============================================================
+// NEW: MASTER EFFECTS COMMANDS
+// ============================================================
+
+#[tauri::command]
+fn set_eq_low(state: State<AppState>, value: f64) -> Result<String, String> {
+    let cmd = AudioCommand {
+        cmd_type: "set_eq_low".to_string(),
+        track: None,
+        value: Some(value),
+        data: None,
+    };
+    state.command_tx.send(cmd).map_err(|e| e.to_string())?;
+    Ok(format!("EQ Low set to {} dB", value))
+}
+
+#[tauri::command]
+fn set_eq_mid(state: State<AppState>, value: f64) -> Result<String, String> {
+    let cmd = AudioCommand {
+        cmd_type: "set_eq_mid".to_string(),
+        track: None,
+        value: Some(value),
+        data: None,
+    };
+    state.command_tx.send(cmd).map_err(|e| e.to_string())?;
+    Ok(format!("EQ Mid set to {} dB", value))
+}
+
+#[tauri::command]
+fn set_eq_high(state: State<AppState>, value: f64) -> Result<String, String> {
+    let cmd = AudioCommand {
+        cmd_type: "set_eq_high".to_string(),
+        track: None,
+        value: Some(value),
+        data: None,
+    };
+    state.command_tx.send(cmd).map_err(|e| e.to_string())?;
+    Ok(format!("EQ High set to {} dB", value))
+}
+
+#[tauri::command]
+fn set_limiter(state: State<AppState>, value: f64) -> Result<String, String> {
+    let cmd = AudioCommand {
+        cmd_type: "set_limiter".to_string(),
+        track: None,
+        value: Some(value),
+        data: None,
+    };
+    state.command_tx.send(cmd).map_err(|e| e.to_string())?;
+    Ok(format!("Limiter threshold set to {}", value))
+}
+
 #[tauri::command]
 fn get_audio_state(state: State<AppState>) -> Result<AudioState, String> {
     Ok(AudioState {
@@ -413,7 +569,7 @@ fn main() {
         engine.run();
     });
 
-    println!("[Main] Audio thread spawned");
+    println!("[Main] Audio thread spawned with Rust Mixer");
     println!("[Main] Tauri starting...");
 
     // Build Tauri app
@@ -433,6 +589,10 @@ fn main() {
             toggle_mute,
             toggle_solo,
             set_bpm,
+            set_eq_low,
+            set_eq_mid,
+            set_eq_high,
+            set_limiter,
             get_audio_state,
         ])
         .run(tauri::generate_context!())

@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@magenta/music": "^1.23.1",
+    "@tauri-apps/api": "^2.10.1",
     "tone": "^14.8.49"
   },
   "devDependencies": {
