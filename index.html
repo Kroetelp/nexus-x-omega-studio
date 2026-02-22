@@ -148,6 +148,11 @@
             </div>
         </div>
 
+        <!-- PIANO ROLL BUTTON -->
+        <button class="btn" id="pianoRollBtn" onclick="openPianoRollPro()" style="background: linear-gradient(45deg, #6b21a8, #9333ea);" title="Open Piano Roll Pro">
+            🎹 Piano Roll
+        </button>
+
         <!-- PLAY BUTTON -->
         <button class="btn" id="playBtn" onclick="window.sys.togglePlay()">▶ PLAY</button>
 
@@ -458,5 +463,66 @@
 </main>
 
 <script type="module" src="/src/main.ts"></script>
+
+<!-- Piano Roll Pro Button Handler -->
+<script>
+// Global function to open Piano Roll Pro with velocity support
+window.openPianoRollPro = async function() {
+    try {
+        // Import Piano Roll components
+        const { showPianoRoll } = await import('/src/ui/PianoRollDialog.ts');
+
+        // Get current pattern data from sequencer
+        const patternData = window.getVelocityPattern ? window.getVelocityPattern() : null;
+
+        // Convert to Piano Roll notes format
+        const notes = [];
+        if (patternData) {
+            for (let track = 0; track < patternData.length; track++) {
+                for (let step = 0; step < patternData[track].length; step++) {
+                    const note = patternData[track][step];
+                    if (note.active) {
+                        notes.push({
+                            id: `note-${track}-${step}`,
+                            pitch: note.pitch,
+                            start: step * 0.25, // 16th note in beats
+                            duration: note.duration * 0.25,
+                            velocity: note.velocity,
+                            instrumentId: track,
+                            selected: false
+                        });
+                    }
+                }
+            }
+        }
+
+        // Show Piano Roll
+        const dialog = showPianoRoll({
+            title: '🎹 Piano Roll Pro',
+            width: 900,
+            height: 600,
+            onNotesChange: (updatedNotes) => {
+                console.log('[PianoRoll] Notes changed:', updatedNotes.length);
+            }
+        });
+
+        // Set notes if we have data
+        if (notes.length > 0) {
+            dialog.setNotes(notes);
+        }
+
+        console.log('[PianoRoll] Opened with', notes.length, 'notes from velocity pattern');
+    } catch (err) {
+        console.error('[PianoRoll] Error:', err);
+
+        // Fallback: open legacy piano roll
+        if (window.sys && window.sys.openPianoRoll) {
+            window.sys.openPianoRoll();
+        } else {
+            alert('Piano Roll Pro coming soon!\n\nThe Piano Roll module is loading. Try again in a moment.');
+        }
+    }
+};
+</script>
 </body>
 </html>
