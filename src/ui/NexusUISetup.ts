@@ -12,6 +12,13 @@ import { loggers } from '../utils/logger';
 import { createEmptyPattern, TRACKS } from '../sequencer/patternUtils';
 import { TRACK_NAMES, NUM_TRACKS, STEPS_PER_PATTERN, TRACK_COLORS } from '../config/index';
 import { appStore } from '../core/AppStore';
+import {
+    generateFullPatternWithVelocity,
+    toLegacyPattern,
+    fromLegacyPattern,
+    GenreType
+} from '../ai-engine/VelocityPatternGenerator';
+import type { NoteData, FullPattern } from '../sequencer/NoteData';
 
 // Logger instance
 const log = loggers.ui;
@@ -689,6 +696,12 @@ let sequencerInterval: number | null = null;
 // Local sequencer data - this is the SOURCE OF TRUTH
 let localSequencerData: number[][] = createEmptyPattern(7, 32);
 
+// Velocity-enhanced pattern data (for Piano Roll Pro)
+let velocityPatternData: FullPattern | null = null;
+
+// Current genre for velocity generation
+let currentGenre: GenreType = 'TECHNO';
+
 // Create synths for each track (only once)
 let synths: Tone.PolySynth[] = [];
 let drums: Tone.MembraneSynth | null = null;
@@ -1365,6 +1378,18 @@ function triggerSound(trackIndex: number, step: number, scheduledTime?: number):
         if (soloActive && !channel.soloed) return;
     }
 
+    // Get velocity from velocityPatternData if available (Piano Roll Pro)
+    let velocity = 100; // Default velocity
+    let notePitch = 60; // Default pitch
+
+    if (velocityPatternData && velocityPatternData[trackIndex] && velocityPatternData[trackIndex][step]) {
+        const noteData = velocityPatternData[trackIndex][step];
+        if (noteData.active) {
+            velocity = noteData.velocity;
+            notePitch = noteData.pitch;
+        }
+    }
+
     // Get current scale from audio engine for musical notes
     const currentScale = audioEngine.getCurrentScale?.() || ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
     const currentSection = songStructure[currentSectionIndex]?.name || 'VERSE';
@@ -1379,37 +1404,40 @@ function triggerSound(trackIndex: number, step: number, scheduledTime?: number):
         ? scheduledTime + 0.001 * trackIndex
         : Tone.now() + 0.001 * trackIndex;
 
+    // Convert MIDI velocity (0-127) to gain (0-1)
+    const velocityGain = velocity / 127;
+
     try {
         switch (trackIndex) {
             case 0: // Kick
-                drums?.triggerAttackRelease('C1', '16n', time, 0.9);
+                drums?.triggerAttackRelease('C1', '16n', time, velocityGain * 0.9);
                 break;
             case 1: // Snare
-                snare?.triggerAttackRelease('16n', time, 0.7);
+                snare?.triggerAttackRelease('16n', time, velocityGain * 0.7);
                 break;
             case 2: // Clap - lighter snare variant
-                snare?.triggerAttackRelease('32n', time, 0.4);
+                snare?.triggerAttackRelease('32n', time, velocityGain * 0.4);
                 break;
             case 3: // HiHat
-                hiHat?.triggerAttackRelease('64n', time, 0.25);
+                hiHat?.triggerAttackRelease('64n', time, velocityGain * 0.25);
                 break;
             case 4: // Bass - varies by section and scale
                 const bassOctave = currentSection === 'DROP' ? 2 : 2;
                 const bassNotes = currentScale.slice(0, 5).map((n, i) => `${n}${bassOctave}`);
                 // Vary note selection based on step and random
                 const bassIndex = (step + Math.floor(Math.random() * 3)) % bassNotes.length;
-                const bassNote = bassNotes[bassIndex];
-                synths[4]?.triggerAttackRelease(bassNote, '8n', time, 0.6);
+                const bassNote = velocityPatternData ? notePitch.toString() : bassNotes[bassIndex];
+                synths[4]?.triggerAttackRelease(bassNote, '8n', time, velocityGain * 0.6);
                 break;
             case 5: // Lead/Arp - dynamic melody based on scale and section
                 const leadOctave = currentSection === 'CHORUS' || currentSection === 'HOOK' ? 5 : 4;
                 const leadNotes = currentScale.map((n, i) => `${n}${leadOctave}`);
                 // Add some randomness to melody
                 const leadIndex = (step + Math.floor(Math.random() * 4)) % leadNotes.length;
-                const leadNote = leadNotes[leadIndex];
+                const leadNote = velocityPatternData ? notePitch.toString() : leadNotes[leadIndex];
                 // Vary duration by section
                 const leadDuration = currentSection === 'DROP' ? '16n' : '8n';
-                synths[5]?.triggerAttackRelease(leadNote, leadDuration, time, 0.4);
+                synths[5]?.triggerAttackRelease(leadNote, leadDuration, time, velocityGain * 0.4);
                 break;
             case 6: // Pad - chords from current scale
                 // Build chords from scale degrees
@@ -1421,13 +1449,75 @@ function triggerSound(trackIndex: number, step: number, scheduledTime?: number):
                     `${currentScale[thirdIdx]}3`,
                     `${currentScale[fifthIdx]}3`
                 ];
-                synths[6]?.triggerAttackRelease(chordNotes, '2n', time, 0.25);
+                synths[6]?.triggerAttackRelease(chordNotes, '2n', time, velocityGain * 0.25);
                 break;
         }
     } catch (e) {
         // Silently catch timing errors
         log.warn(' Audio trigger error:', e);
     }
+}
+
+/**
+ * Generate pattern with velocity (Piano Roll Pro)
+ */
+export function generatePatternWithVelocity(
+    genre: string,
+    scale: string,
+    density: number = 0.5
+): void {
+    // Map genre string to GenreType
+    const genreMap: Record<string, GenreType> = {
+        'TECHNO': 'TECHNO',
+        'HOUSE': 'HOUSE',
+        'DNB': 'DNB',
+        'DRUM AND BASS': 'DNB',
+        'HIPHOP': 'HIPHOP',
+        'HIP HOP': 'HIPHOP',
+        'TRAP': 'TRAP',
+        'AMBIENT': 'AMBIENT',
+        'DUBSTEP': 'TRAP', // Similar velocity profile
+        'DUB': 'AMBIENT',
+        'TRANCE': 'TECHNO',
+        'EDM': 'HOUSE'
+    };
+
+    const genreType = genreMap[genre.toUpperCase()] || 'TECHNO';
+    currentGenre = genreType;
+
+    log.info(`[VELOCITY] Generating ${genreType} pattern with density ${density}`);
+
+    // Generate velocity pattern
+    velocityPatternData = generateFullPatternWithVelocity(
+        genreType,
+        scale,
+        density,
+        true // Humanize
+    );
+
+    // Convert to legacy format for backward compatibility
+    localSequencerData = toLegacyPattern(velocityPatternData);
+
+    // Update grid UI
+    updateGridFromPattern(localSequencerData);
+
+    log.info(`[VELOCITY] Pattern generated with velocity data`);
+}
+
+/**
+ * Get current velocity pattern data
+ */
+export function getVelocityPattern(): FullPattern | null {
+    return velocityPatternData;
+}
+
+/**
+ * Set velocity pattern data
+ */
+export function setVelocityPattern(pattern: FullPattern): void {
+    velocityPatternData = pattern;
+    localSequencerData = toLegacyPattern(pattern);
+    updateGridFromPattern(localSequencerData);
 }
 
 // Export initialization function and sequencer functions globally
@@ -1439,6 +1529,9 @@ function triggerSound(trackIndex: number, step: number, scheduledTime?: number):
 (window as any).setSongStructure = setSongStructure;
 (window as any).getSongStructure = getSongStructure;
 (window as any).reinitSynths = reinitSynths;
+(window as any).generatePatternWithVelocity = generatePatternWithVelocity;
+(window as any).getVelocityPattern = getVelocityPattern;
+(window as any).setVelocityPattern = setVelocityPattern;
 
 /**
  * Reinitialize synths (call when kit changes)
