@@ -110,7 +110,15 @@ export class PianoRollEditor {
         selectionBorder: '#00ff94',
         text: '#888888',
         textLight: '#cccccc',
+        // Velocity gradient colors (green -> yellow -> red)
+        velocityLow: '#00ff00',      // 0-42
+        velocityMid: '#ffff00',      // 43-84
+        velocityHigh: '#ff4400',     // 85-127
+        velocityLane: '#1a1a1a',
     };
+
+    // Velocity lane height
+    private velocityLaneHeight: number = 60;
 
     // Note names for display
     private static readonly NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -297,8 +305,83 @@ export class PianoRollEditor {
 
     render(): void {
         this.renderGrid();
+        this.renderNotes();
+        this.renderVelocityLane();
         this.renderPiano();
         this.renderHeader();
+    }
+
+    /**
+     * Render all notes
+     */
+    private renderNotes(): void {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.translate(-this.scrollX, -this.scrollY);
+
+        this.notes.forEach(note => {
+            this.renderNote(ctx, note);
+        });
+
+        ctx.restore();
+    }
+
+    /**
+     * Render velocity lane at bottom (FL Studio style)
+     */
+    private renderVelocityLane(): void {
+        const ctx = this.ctx;
+        const totalBeats = this.config.totalMeasures * this.config.beatsPerMeasure;
+        const pitchRange = this.config.maxPitch - this.config.minPitch;
+        const laneY = pitchRange * this.noteWidth + 10; // Below piano roll
+        const laneHeight = this.velocityLaneHeight;
+
+        ctx.save();
+        ctx.translate(-this.scrollX, 0);
+
+        // Background
+        ctx.fillStyle = this.COLORS.velocityLane;
+        ctx.fillRect(0, laneY, totalBeats * this.beatWidth, laneHeight);
+
+        // Border
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, laneY);
+        ctx.lineTo(totalBeats * this.beatWidth, laneY);
+        ctx.stroke();
+
+        // Draw velocity bars for each note
+        this.notes.forEach(note => {
+            const x = note.start * this.beatWidth;
+            const barHeight = (note.velocity / 127) * (laneHeight - 10);
+            const barWidth = Math.max(3, note.duration * this.beatWidth - 2);
+
+            // Velocity color
+            const color = this.velocityToColor(note.velocity);
+
+            // Bar
+            ctx.fillStyle = color;
+            ctx.fillRect(x + 1, laneY + laneHeight - barHeight - 5, barWidth, barHeight);
+
+            // Highlight on selection
+            if (note.selected) {
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x + 1, laneY + laneHeight - barHeight - 5, barWidth, barHeight);
+            }
+        });
+
+        // Label
+        ctx.fillStyle = '#666';
+        ctx.font = '10px JetBrains Mono';
+        ctx.fillText('VELOCITY', 5, laneY + 15);
+
+        // Velocity range labels
+        ctx.fillText('127', 5, laneY + 30);
+        ctx.fillText('0', 5, laneY + laneHeight - 5);
+
+        ctx.restore();
     }
 
     private renderGrid(): void {
@@ -415,41 +498,57 @@ export class PianoRollEditor {
         const width = note.duration * this.beatWidth;
         const height = this.noteWidth - 2;
 
-        // Note color based on selection and velocity
-        let color = this.COLORS.noteDefault;
-        if (note.selected) {
-            color = this.COLORS.noteSelected;
-        }
+        // Note color based on velocity (FL Studio style gradient)
+        let color = note.selected ? this.COLORS.noteSelected : this.velocityToColor(note.velocity);
 
-        // Apply velocity to brightness
-        const brightness = 0.5 + (note.velocity / 127) * 0.5;
+        // Draw note body with gradient
+        const gradient = ctx.createLinearGradient(x, y, x, y + height);
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(1, this.darkenColor(color, 0.3));
 
-        // Draw note body
-        ctx.fillStyle = color;
-        ctx.globalAlpha = brightness;
+        ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.roundRect(x + 1, y + 1, width - 2, height, 3);
         ctx.fill();
-        ctx.globalAlpha = 1;
+
+        // Velocity bar at bottom of note (shows intensity)
+        const velHeight = (note.velocity / 127) * (height - 4);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.fillRect(x + width - 6, y + height - velHeight + 1, 4, velHeight);
 
         // Border
-        ctx.strokeStyle = note.selected ? '#ffffff' : this.COLORS.noteBorder;
+        ctx.strokeStyle = note.selected ? '#ffffff' : 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = note.selected ? 2 : 1;
-        ctx.globalAlpha = 0.5;
         ctx.stroke();
-        ctx.globalAlpha = 1;
-
-        // Velocity indicator (bottom bar)
-        const velHeight = (note.velocity / 127) * (height - 4);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.fillRect(x + width - 6, y + height - velHeight + 1, 4, velHeight);
 
         // Note name (if wide enough)
         if (width > 30) {
             ctx.fillStyle = '#000000';
-            ctx.font = '10px JetBrains Mono';
+            ctx.font = 'bold 10px JetBrains Mono';
             ctx.fillText(this.getNoteName(note.pitch), x + 4, y + height - 4);
         }
+
+        // Velocity value (if very wide)
+        if (width > 60) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.font = '9px JetBrains Mono';
+            ctx.fillText(`v${note.velocity}`, x + 4, y + 12);
+        }
+    }
+
+    /**
+     * Darken a color by a factor
+     */
+    private darkenColor(color: string, factor: number): string {
+        // Parse rgb values
+        const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (!match) return color;
+
+        const r = Math.round(parseInt(match[1]) * (1 - factor));
+        const g = Math.round(parseInt(match[2]) * (1 - factor));
+        const b = Math.round(parseInt(match[3]) * (1 - factor));
+
+        return `rgb(${r}, ${g}, ${b})`;
     }
 
     private renderPiano(): void {
@@ -964,6 +1063,37 @@ export class PianoRollEditor {
         const octave = Math.floor(pitch / 12) - 1;
         const noteName = PianoRollEditor.NOTE_NAMES[pitch % 12];
         return `${noteName}${octave}`;
+    }
+
+    /**
+     * Convert velocity (0-127) to color gradient
+     * Green (soft) -> Yellow (medium) -> Red (loud)
+     */
+    private velocityToColor(velocity: number): string {
+        const normalized = velocity / 127;
+
+        if (normalized < 0.33) {
+            // Green to Yellow-Green
+            const t = normalized / 0.33;
+            const r = Math.round(0 + t * 128);
+            const g = Math.round(200 + t * 55);
+            const b = 0;
+            return `rgb(${r}, ${g}, ${b})`;
+        } else if (normalized < 0.66) {
+            // Yellow-Green to Yellow-Orange
+            const t = (normalized - 0.33) / 0.33;
+            const r = Math.round(128 + t * 127);
+            const g = Math.round(255 - t * 85);
+            const b = 0;
+            return `rgb(${r}, ${g}, ${b})`;
+        } else {
+            // Orange to Red
+            const t = (normalized - 0.66) / 0.34;
+            const r = 255;
+            const g = Math.round(170 - t * 170);
+            const b = Math.round(t * 50);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
     }
 
     // ============================================================
