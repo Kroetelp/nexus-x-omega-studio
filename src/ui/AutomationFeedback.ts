@@ -12,6 +12,25 @@ interface AutomationIndicator {
   lastChangeTime: number;
 }
 
+// Effects structure interface for type safety
+interface EffectsChain {
+  eq3: {
+    low: { value: number };
+    mid: { value: number };
+    high: { value: number };
+  };
+  masterPitch: { pitch: number };
+  stereoWidener: { width: { value: number } };
+  reverb: { wet: { value: number } };
+  delay: { wet: { value: number } };
+  autoFilter: { wet: { value: number }; baseFrequency: { value: number } };
+  cheby: { wet: { value: number }; order: number };
+  stutter: { wet: { value: number }; frequency: { value: number } };
+  bitcrushEnabled?: { value: number };
+  bitcrushDepth?: { value: number };
+  bitcrushFreq?: { value: number };
+}
+
 export class AutomationFeedback {
   private static instance: AutomationFeedback;
   private indicators: Map<string, AutomationIndicator> = new Map();
@@ -76,7 +95,7 @@ export class AutomationFeedback {
     const selector = elementMap[parameter];
     if (!selector) return null;
 
-    const parent = document.querySelector(selector);
+    const parent = document.querySelector(selector) as HTMLElement | null;
     if (!parent) return null;
 
     // Create LED indicator
@@ -109,7 +128,7 @@ export class AutomationFeedback {
   private setupParameterListeners(): void {
     if (!window.engine?.getEffects) return;
 
-    const effects = window.engine.getEffects();
+    const effects = window.engine.getEffects() as unknown as EffectsChain;
     const updateInterval = 100; // ms
     const automationThreshold = 2000; // ms
 

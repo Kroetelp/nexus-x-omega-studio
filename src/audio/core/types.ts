@@ -116,7 +116,8 @@ export type KitType =
     | 'CLUB'
     | 'CHIPTUNE'
     | 'INDUSTRIAL'
-    | 'ETHEREAL';
+    | 'ETHEREAL'
+    | 'PHONK';
 
 // ============================================================
 // METERING

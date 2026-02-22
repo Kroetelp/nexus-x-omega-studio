@@ -30,3 +30,16 @@ export { Drum808Controller, Drum808Param, Drum808Sound, Drum808Preset, DRUM_808_
 // WORKLET
 // ============================================================
 export * from './worklet/messages';
+
+// ============================================================
+// EFFECTS
+// ============================================================
+export { EffectRack, createEffectRack } from './effects/EffectRack';
+export { LoopStation, createLoopStation } from './effects/LoopStation';
+export { SidechainCompressor, createSidechain } from './effects/SidechainCompressor';
+export { SpectralFreeze, createSpectralFreeze } from './effects/SpectralFreeze';
+
+// ============================================================
+// SAMPLES
+// ============================================================
+export { SamplePad, createSamplePad } from './SamplePad';

@@ -3,6 +3,10 @@
  * Interactive drum machine interface for TR-808
  */
 
+import { loggers } from '../utils/logger';
+
+const log = loggers.ui;
+
 export class Drum808Pad {
     private container: HTMLElement;
     private drum808: any;
@@ -294,7 +298,7 @@ export class Drum808Pad {
         // Apply preset to drum808
         if (this.drum808 && this.drum808.applyPreset) {
             // Import presets
-            import('./audio/instruments/Drum808Controller').then(module => {
+            import('../audio/instruments/Drum808Controller').then(module => {
                 const presets = module.DRUM_808_PRESETS;
                 const p = presets[preset];
                 if (p && this.drum808) {
@@ -317,10 +321,10 @@ export class Drum808Pad {
                         if (p.hh.closedDecay !== undefined) this.drum808.setParam(31, p.hh.closedDecay);
                         if (p.hh.openDecay !== undefined) this.drum808.setParam(35, p.hh.openDecay);
                     }
-                    console.log(`[808] Loaded preset: ${preset}`);
+                    log.debug(` Loaded preset: ${preset}`);
                 }
             }).catch(() => {
-                console.log(`[808] Preset ${preset} selected (demo mode)`);
+                log.debug(` Preset ${preset} selected (demo mode)`);
             });
         }
     }

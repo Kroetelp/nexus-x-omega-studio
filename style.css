@@ -311,10 +311,92 @@ header.app-bar {
 main.workspace { flex: 1; display: flex; overflow: hidden; }
 
 /* SEQUENCER RACK */
-section.sequencer { 
-    flex: 1; padding: 20px; overflow-y: auto; 
-    display: flex; flex-direction: column; gap: 12px; 
-    background: radial-gradient(circle at 50% 30%, rgba(20,20,20,0.5) 0%, var(--bg) 100%); 
+section.sequencer {
+    flex: 1; padding: 20px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 12px;
+    background: radial-gradient(circle at 50% 30%, rgba(20,20,20,0.5) 0%, var(--bg) 100%);
+}
+
+/* Track Row - New Grid System */
+.track-row {
+    display: flex;
+    gap: 15px;
+    background: var(--panel);
+    padding: 10px 15px;
+    border-radius: 8px;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.track-row:hover {
+    background: #1a1a1a;
+}
+
+.track-row .track-label {
+    min-width: 90px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.steps-container {
+    flex: 1;
+    display: flex;
+    gap: 3px;
+    padding: 5px;
+    background: #000;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    overflow-x: auto;
+}
+
+/* Step Button */
+.step-btn {
+    width: 24px;
+    height: 36px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.step-btn:hover {
+    background: #2a2a2a;
+    border-color: #555;
+    transform: scale(1.05);
+}
+
+.step-btn.beat-marker {
+    border-color: #444;
+}
+
+.step-btn.bar-start {
+    margin-left: 8px;
+    border-left: 2px solid #555;
+}
+
+.step-btn.bar-start:first-child {
+    margin-left: 0;
+}
+
+/* Active state - colored by track */
+.track-row:nth-child(1) .step-btn.active { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
+.track-row:nth-child(2) .step-btn.active { background: var(--warn); border-color: var(--warn); box-shadow: 0 0 10px var(--warn); }
+.track-row:nth-child(3) .step-btn.active { background: var(--warn); border-color: var(--warn); box-shadow: 0 0 10px var(--warn); }
+.track-row:nth-child(4) .step-btn.active { background: var(--hyper); border-color: var(--hyper); box-shadow: 0 0 10px var(--hyper); }
+.track-row:nth-child(5) .step-btn.active { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.track-row:nth-child(6) .step-btn.active { background: var(--flux); border-color: var(--flux); box-shadow: 0 0 10px var(--flux); }
+.track-row:nth-child(7) .step-btn.active { background: var(--hyper); border-color: var(--hyper); box-shadow: 0 0 10px var(--hyper); }
+
+/* Playing step indicator */
+.step-btn.playing {
+    transform: scale(1.15);
+    box-shadow: 0 0 15px #fff;
 }
 
 article.track { 

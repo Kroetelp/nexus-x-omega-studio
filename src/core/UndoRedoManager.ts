@@ -154,8 +154,8 @@ export class UndoRedoManager {
   }
 
   private updateUI(): void {
-    const undoBtn = document.getElementById('undoBtn');
-    const redoBtn = document.getElementById('redoBtn');
+    const undoBtn = document.getElementById('undoBtn') as HTMLButtonElement | null;
+    const redoBtn = document.getElementById('redoBtn') as HTMLButtonElement | null;
 
     if (undoBtn) {
       undoBtn.disabled = !this.canUndo();

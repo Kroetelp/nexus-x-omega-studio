@@ -50,7 +50,7 @@ export function interpolateObject<T extends Record<string, number>>(
   const result = {} as T;
   for (const key in from) {
     if (key in to) {
-      result[key] = interpolate(from[key], to[key], progress, easing);
+      (result as Record<string, number>)[key] = interpolate(from[key], to[key], progress, easing);
     }
   }
   return result;

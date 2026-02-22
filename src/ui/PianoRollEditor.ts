@@ -11,6 +11,7 @@
  * - Undo/Redo support
  */
 
+import * as Tone from 'tone';
 import { instrumentRegistry } from '../audio/core/InstrumentRegistry';
 import { MessageType } from '../audio/core/types';
 
@@ -1048,7 +1049,7 @@ export class PianoRollEditor {
     exportToMidi(): Uint8Array {
         // Simple MIDI export
         const notes = this.getNotes();
-        const tempo = 120; // TODO: Get from engine
+        const tempo = Math.round(Tone.Transport.bpm.value) || 120;
         const ticksPerBeat = 480;
 
         // Build MIDI file structure

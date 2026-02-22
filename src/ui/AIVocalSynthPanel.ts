@@ -3,6 +3,7 @@
  * UI for text-to-singing synthesis
  */
 
+import * as Tone from 'tone';
 import { AIVocalSynth, VocalNote, VocalSettings, createAIVocalSynth } from './AIVocalSynth';
 
 export class AIVocalSynthPanel {
@@ -564,7 +565,7 @@ export class AIVocalSynthPanel {
                 // Play a preview tone
                 if (window.engine?.noteOn) {
                     window.engine.noteOn(note.note, 0.5);
-                    setTimeout(() => window.engine.noteOff?.(note.note), beatDuration * 250);
+                    setTimeout(() => window.engine?.noteOff?.(note.note), beatDuration * 250);
                 }
             }
 

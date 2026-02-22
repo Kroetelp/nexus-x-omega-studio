@@ -2,7 +2,10 @@
  * Validation utilities for NEXUS-X
  */
 
-import type { StoredState, ValidationResult } from '../types/index.js';
+import type { StoredState, ValidationResult, AppError } from '../types/index.js';
+import { loggers } from './logger';
+
+const log = loggers.system;
 
 const CURRENT_VERSION = '3.8.0';
 const MIN_VERSION = '3.0.0';
@@ -59,12 +62,12 @@ export function sanitizeStoredState(data: any): StoredState | null {
   const validation = validateStoredState(data);
 
   if (!validation.valid) {
-    console.error('Invalid stored state:', validation.errors);
+    log.error('Invalid stored state:', validation.errors);
     return null;
   }
 
   if (validation.warnings.length > 0) {
-    console.warn('Stored state warnings:', validation.warnings);
+    log.warn('Stored state warnings:', validation.warnings);
   }
 
   return {

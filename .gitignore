@@ -7,9 +7,22 @@ pnpm-lock.yaml
 # Build outputs
 dist/
 build/
-*.wasm
 *.o
 *.a
+
+# Tauri build artifacts (too large for GitHub)
+src-tauri/target/
+
+# WASM - keep public/*.wasm but ignore others
+/*.wasm
+/wasm/**/*.wasm
+!public/*.wasm
+
+# Root-level build artifacts (should never be committed)
+/main.js
+/processor.js
+/nexus-dsp.*
+/*.bundle.js
 
 # TypeScript
 *.tsbuildinfo

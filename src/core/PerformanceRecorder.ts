@@ -3,6 +3,7 @@
  * Record and replay your entire performance with millisecond precision
  */
 
+import * as Tone from 'tone';
 import type { PerformanceEvent, PerformanceRecording } from '../types/index.js';
 import { errorHandler } from './ErrorHandler.js';
 
@@ -14,7 +15,7 @@ export class PerformanceRecorder {
   private startTime: number = 0;
   private currentRecording: PerformanceRecording | null = null;
   private recordings: PerformanceRecording[] = [];
-  private playTimeouts: number[] = [];
+  private playTimeouts: ReturnType<typeof setTimeout>[] = [];
   private ghostModeActive = false;
   private ghostOverlay: HTMLElement | null = null;
 
@@ -151,29 +152,29 @@ export class PerformanceRecorder {
   private replayEvent(event: PerformanceEvent): void {
     switch (event.type) {
       case 'trigger':
-        this.replayTrigger(event.data);
+        this.replayTrigger(event.data as { trackIndex: number; stepIndex: number; value: number });
         break;
 
       case 'parameter':
-        this.replayParameter(event.data);
+        this.replayParameter(event.data as { parameter: string; value: number });
         break;
 
       case 'transport':
-        this.replayTransport(event.data);
+        this.replayTransport(event.data as { action: string });
         break;
 
       case 'snapshot':
-        this.replaySnapshot(event.data);
+        this.replaySnapshot(event.data as { index: number });
         break;
 
       case 'mutation':
-        this.replayMutation(event.data);
+        this.replayMutation(event.data as { trackIndex: number; pattern: number[] });
         break;
     }
   }
 
   private replayTrigger(data: { trackIndex: number; stepIndex: number; value: number }): void {
-    if (!window.engine) return;
+    if (!window.engine?.trigger) return;
 
     const time = Tone.now();
     window.engine.trigger(data.trackIndex, time, data.value, data.stepIndex);
@@ -189,32 +190,48 @@ export class PerformanceRecorder {
   }
 
   private replayParameter(data: { parameter: string; value: number }): void {
-    if (!window.engine) return;
+    const effects = window.engine?.getEffects?.() as Record<string, unknown> | undefined;
+    if (!effects) return;
 
-    const effects = window.engine.getEffects();
+    // Helper to safely set nested value
+    const setNested = (obj: unknown, prop: string, value: number): boolean => {
+      if (obj && typeof obj === 'object' && prop in obj) {
+        const o = obj as Record<string, unknown>;
+        if (o[prop] && typeof o[prop] === 'object') {
+          const p = o[prop] as Record<string, unknown>;
+          if ('value' in p && typeof p.value === 'number') {
+            p.value = value;
+            return true;
+          }
+        }
+      }
+      return false;
+    };
 
     // Apply parameter change
     switch (data.parameter) {
       case 'eqLow':
-        effects.eq3.low.value = data.value;
+        setNested(effects.eq3, 'low', data.value);
         break;
       case 'eqMid':
-        effects.eq3.mid.value = data.value;
+        setNested(effects.eq3, 'mid', data.value);
         break;
       case 'eqHigh':
-        effects.eq3.high.value = data.value;
+        setNested(effects.eq3, 'high', data.value);
         break;
       case 'reverbWet':
-        effects.reverb.wet.value = data.value;
+        setNested(effects.reverb, 'wet', data.value);
         break;
       case 'delayWet':
-        effects.delay.wet.value = data.value;
+        setNested(effects.delay, 'wet', data.value);
         break;
       case 'masterPitch':
-        effects.masterPitch.pitch = data.value;
+        if (effects.masterPitch && typeof effects.masterPitch === 'object') {
+          (effects.masterPitch as Record<string, unknown>).pitch = data.value;
+        }
         break;
       case 'stereoWidth':
-        effects.stereoWidener.width.value = data.value;
+        setNested(effects.stereoWidener, 'width', data.value);
         break;
     }
   }
@@ -228,16 +245,16 @@ export class PerformanceRecorder {
   }
 
   private replaySnapshot(data: { index: number }): void {
-    if (window.sys?.loadSnap) {
+    if (typeof window.sys?.loadSnap === 'function') {
       window.sys.loadSnap(data.index);
     }
   }
 
   private replayMutation(data: { trackIndex: number; pattern: number[] }): void {
-    if (!window.seq) return;
+    if (!window.seq?.data) return;
 
     window.seq.data[data.trackIndex] = [...data.pattern];
-    if (window.ui?.refreshGrid) {
+    if (typeof window.ui?.refreshGrid === 'function') {
       window.ui.refreshGrid();
     }
   }
@@ -349,7 +366,8 @@ export class PerformanceRecorder {
 
     // Position based on event type
     if (event.type === 'trigger') {
-      const track = document.getElementById(`track-${event.data.trackIndex}`);
+      const triggerData = event.data as { trackIndex: number };
+      const track = document.getElementById(`track-${triggerData.trackIndex}`);
       if (track) {
         const rect = track.getBoundingClientRect();
         indicator.style.left = `${rect.left + 50}px`;
@@ -372,7 +390,8 @@ export class PerformanceRecorder {
     switch (event.type) {
       case 'trigger':
         // Visual only - no audio
-        const label = document.getElementById(`label-${event.data.trackIndex}`);
+        const triggerData = event.data as { trackIndex: number };
+        const label = document.getElementById(`label-${triggerData.trackIndex}`);
         if (label) {
           label.style.color = 'var(--accent)';
           label.style.textShadow = '0 0 10px var(--accent)';
@@ -393,13 +412,14 @@ export class PerformanceRecorder {
 
     this.recordEvent('snapshot', {
       index: -1,
-      data: JSON.parse(JSON.stringify(window.seq.data))
+      data: JSON.parse(JSON.stringify(window.seq?.data ?? []))
     });
   }
 
   /**
    * Capture current state
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private captureCurrentState(): any {
     if (!window.seq || !window.engine) return {};
 
@@ -413,17 +433,30 @@ export class PerformanceRecorder {
    * Capture current parameters
    */
   private captureParameters(): Record<string, number> {
-    if (!window.engine) return {};
+    const effects = window.engine?.getEffects?.() as Record<string, unknown> | undefined;
+    if (!effects) return {};
 
-    const effects = window.engine.getEffects();
+    // Helper to safely get nested value
+    const getNested = (obj: unknown, ...props: string[]): number => {
+      let current: unknown = obj;
+      for (const prop of props) {
+        if (current && typeof current === 'object' && prop in current) {
+          current = (current as Record<string, unknown>)[prop];
+        } else {
+          return 0;
+        }
+      }
+      return typeof current === 'number' ? current : 0;
+    };
+
     return {
-      eqLow: effects.eq3.low.value,
-      eqMid: effects.eq3.mid.value,
-      eqHigh: effects.eq3.high.value,
-      reverbWet: effects.reverb.wet.value,
-      delayWet: effects.delay.wet.value,
-      masterPitch: effects.masterPitch.pitch,
-      stereoWidth: effects.stereoWidener.width.value
+      eqLow: getNested(effects.eq3, 'low', 'value'),
+      eqMid: getNested(effects.eq3, 'mid', 'value'),
+      eqHigh: getNested(effects.eq3, 'high', 'value'),
+      reverbWet: getNested(effects.reverb, 'wet', 'value'),
+      delayWet: getNested(effects.delay, 'wet', 'value'),
+      masterPitch: getNested(effects.masterPitch, 'pitch'),
+      stereoWidth: getNested(effects.stereoWidener, 'width', 'value')
     };
   }
 
@@ -435,7 +468,7 @@ export class PerformanceRecorder {
 
     // Clear sequencer
     window.seq.data.forEach(track => track.fill(0));
-    if (window.ui?.refreshGrid) {
+    if (typeof window.ui?.refreshGrid === 'function') {
       window.ui.refreshGrid();
     }
   }
@@ -484,29 +517,29 @@ export class PerformanceRecorder {
    */
   private setupEventListeners(): void {
     // Listen for note triggers
-    document.addEventListener('sequencer:trigger', (e: CustomEvent) => {
-      this.recordEvent('trigger', e.detail);
-    });
+    document.addEventListener('sequencer:trigger', ((e: Event) => {
+      this.recordEvent('trigger', (e as CustomEvent).detail);
+    }) as EventListener);
 
     // Listen for parameter changes
-    document.addEventListener('parameter:change', (e: CustomEvent) => {
-      this.recordEvent('parameter', e.detail);
-    });
+    document.addEventListener('parameter:change', ((e: Event) => {
+      this.recordEvent('parameter', (e as CustomEvent).detail);
+    }) as EventListener);
 
     // Listen for transport changes
-    document.addEventListener('transport:change', (e: CustomEvent) => {
-      this.recordEvent('transport', e.detail);
-    });
+    document.addEventListener('transport:change', ((e: Event) => {
+      this.recordEvent('transport', (e as CustomEvent).detail);
+    }) as EventListener);
 
     // Listen for snapshot loads
-    document.addEventListener('snapshot:load', (e: CustomEvent) => {
-      this.recordEvent('snapshot', e.detail);
-    });
+    document.addEventListener('snapshot:load', ((e: Event) => {
+      this.recordEvent('snapshot', (e as CustomEvent).detail);
+    }) as EventListener);
 
     // Listen for mutations
-    document.addEventListener('sequencer:mutation', (e: CustomEvent) => {
-      this.recordEvent('mutation', e.detail);
-    });
+    document.addEventListener('sequencer:mutation', ((e: Event) => {
+      this.recordEvent('mutation', (e as CustomEvent).detail);
+    }) as EventListener);
   }
 
   /**

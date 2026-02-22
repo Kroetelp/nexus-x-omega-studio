@@ -9,6 +9,9 @@ import {
     MessageType,
     WorkletMessage,
 } from '../core/types';
+import { loggers } from '../../utils/logger';
+
+const log = loggers.audio;
 
 // ============================================================
 // SIMPLE EVENT EMITTER (Browser-compatible replacement)
@@ -116,7 +119,7 @@ export abstract class InstrumentController extends SimpleEventEmitter {
     setParam(paramId: number, value: number): void {
         const def = this.getParamDefinitions().find(p => p.id === paramId);
         if (!def) {
-            console.warn(`[Instrument ${this.id}] Unknown param: ${paramId}`);
+            log.warn(` ${this.id}] Unknown param: ${paramId}`);
             return;
         }
 
@@ -125,7 +128,7 @@ export abstract class InstrumentController extends SimpleEventEmitter {
 
         // Validate for finite values
         if (!isFinite(clamped)) {
-            console.warn(`[Instrument ${this.id}] Non-finite value for param ${paramId}`);
+            log.warn(` ${this.id}] Non-finite value for param ${paramId}`);
             return;
         }
 

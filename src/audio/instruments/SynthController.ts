@@ -177,6 +177,7 @@ export class SynthController extends InstrumentController {
             sine: 0,
             triangle: 1,
             square: 2,
+            saw: 3,
         };
         this.setParam(SynthParam.LFO_TYPE, types[type]);
         this.setParam(SynthParam.LFO_RATE, rate);

@@ -5,6 +5,9 @@
 
 import * as Tone from 'tone';
 import { errorHandler } from './ErrorHandler.js';
+import { loggers } from '../utils/logger';
+
+const log = loggers.system;
 
 interface SpectralZone {
   id: string;
@@ -19,6 +22,9 @@ interface SpectralHistory {
   timestamp: number;
   fftData: Float32Array;
 }
+
+// Type for effects access
+type EffectsRecord = Record<string, unknown>;
 
 export class SpectralWorkbench {
   private static instance: SpectralWorkbench;
@@ -131,11 +137,12 @@ export class SpectralWorkbench {
 
       // Connect to master output
       if (window.engine?.getEffects) {
-        const effects = window.engine.getEffects();
-        effects.limiter.connect(this.analyser);
+        const effects = window.engine.getEffects() as Record<string, unknown>;
+        const limiter = effects.limiter as { connect?: (target: unknown) => void } | undefined;
+        limiter?.connect?.(this.analyser);
       }
     } catch (error) {
-      console.error('Failed to initialize spectral analyser:', error);
+      log.error('Failed to initialize spectral analyser:', error);
     }
   }
 
@@ -194,7 +201,7 @@ export class SpectralWorkbench {
     }
 
     if (eraseBtn) {
-      eraseBtn.style.background = this.isDrawingMode ? '#333' : 'var(--flux)';
+      eraseBtn.style.background = this.isDrawingMode ? '#333' : '#f59e0b';
       eraseBtn.style.color = this.isDrawingMode ? '#fff' : '#000';
     }
   }
@@ -264,7 +271,7 @@ export class SpectralWorkbench {
    * Update the last created zone
    */
   private updateLastZone(x: number, y: number): void {
-    if (this.spectralZones.length === 0) return;
+    if (this.spectralZones.length === 0 || !this.canvas) return;
 
     const lastZone = this.spectralZones[this.spectralZones.length - 1];
     const freqRange = this.yToFrequency(y);
@@ -343,16 +350,16 @@ export class SpectralWorkbench {
   }
 
   /**
-   * Get color for parameter
+   * Get color for parameter (using hex colors for Canvas compatibility)
    */
   private getParameterColor(param: string): string {
     const colors: Record<string, string> = {
-      filterFreq: 'var(--primary)',
-      reverbWet: 'var(--accent)',
-      delayWet: 'var(--hyper)',
-      distortion: 'var(--flux)'
+      filterFreq: '#00ff94',   // primary green
+      reverbWet: '#ff00cc',    // accent magenta
+      delayWet: '#00ccff',     // hyper cyan
+      distortion: '#f59e0b'    // flux orange
     };
-    return colors[param] || 'var(--primary)';
+    return colors[param] || '#00ff94';
   }
 
   /**
@@ -361,30 +368,36 @@ export class SpectralWorkbench {
   private applySpectralZone(zone: SpectralZone): void {
     if (!window.engine?.getEffects) return;
 
-    const effects = window.engine.getEffects();
+    const effects = window.engine.getEffects() as EffectsRecord;
 
     switch (zone.parameter) {
       case 'filterFreq':
         // Apply filter frequency based on zone frequency
         const centerFreq = (zone.frequencyMin + zone.frequencyMax) / 2;
-        effects.autoFilter.baseFrequency.value = centerFreq;
-        effects.autoFilter.wet.value = zone.amplitude * 0.5;
+        const autoFilter = effects.autoFilter as { baseFrequency?: { value: number }; wet?: { value: number } } | undefined;
+        if (autoFilter?.baseFrequency) autoFilter.baseFrequency.value = centerFreq;
+        if (autoFilter?.wet) autoFilter.wet.value = zone.amplitude * 0.5;
         break;
 
       case 'reverbWet':
         // Increase reverb for this frequency range
-        effects.reverb.wet.value = Math.min(1, zone.amplitude);
+        const reverb = effects.reverb as { wet?: { value: number } } | undefined;
+        if (reverb?.wet) reverb.wet.value = Math.min(1, zone.amplitude);
         break;
 
       case 'delayWet':
         // Increase delay wet
-        effects.delay.wet.value = Math.min(1, zone.amplitude * 0.7);
+        const delay = effects.delay as { wet?: { value: number } } | undefined;
+        if (delay?.wet) delay.wet.value = Math.min(1, zone.amplitude * 0.7);
         break;
 
       case 'distortion':
         // Add distortion
-        effects.distortion.distortion = zone.amplitude * 0.5;
-        effects.distortion.wet.value = zone.amplitude * 0.5;
+        const distortion = effects.distortion as { distortion?: number; wet?: { value: number } } | undefined;
+        if (distortion) {
+          distortion.distortion = zone.amplitude * 0.5;
+          if (distortion.wet) distortion.wet.value = zone.amplitude * 0.5;
+        }
         break;
     }
   }
@@ -395,24 +408,30 @@ export class SpectralWorkbench {
   private removeSpectralZoneEffect(zone: SpectralZone): void {
     if (!window.engine?.getEffects) return;
 
-    const effects = window.engine.getEffects();
+    const effects = window.engine.getEffects() as EffectsRecord;
 
     switch (zone.parameter) {
       case 'filterFreq':
-        effects.autoFilter.wet.value = 0;
+        const autoFilter = effects.autoFilter as { wet?: { value: number } } | undefined;
+        if (autoFilter?.wet) autoFilter.wet.value = 0;
         break;
 
       case 'reverbWet':
-        effects.reverb.wet.value = 0.3; // Return to default
+        const reverb = effects.reverb as { wet?: { value: number } } | undefined;
+        if (reverb?.wet) reverb.wet.value = 0.3; // Return to default
         break;
 
       case 'delayWet':
-        effects.delay.wet.value = 0;
+        const delay = effects.delay as { wet?: { value: number } } | undefined;
+        if (delay?.wet) delay.wet.value = 0;
         break;
 
       case 'distortion':
-        effects.distortion.distortion = 0;
-        effects.distortion.wet.value = 0;
+        const distortion = effects.distortion as { distortion?: number; wet?: { value: number } } | undefined;
+        if (distortion) {
+          distortion.distortion = 0;
+          if (distortion.wet) distortion.wet.value = 0;
+        }
         break;
     }
   }
@@ -445,7 +464,9 @@ export class SpectralWorkbench {
     this.ctx.fillRect(0, 0, width, height);
 
     // Get FFT data
-    const fftData = this.analyser.getValue();
+    const fftDataRaw = this.analyser.getValue();
+    // Ensure we have a single Float32Array (not an array of arrays)
+    const fftData: Float32Array = Array.isArray(fftDataRaw) ? fftDataRaw[0] : fftDataRaw;
 
     // Store in history for 3D effect
     this.history.unshift({ timestamp: Date.now(), fftData });
@@ -489,38 +510,40 @@ export class SpectralWorkbench {
    * Render spectral zones overlay
    */
   private renderSpectralZones(): void {
-    if (!this.ctx || !this.canvas) return;
+    const ctx = this.ctx;
+    const canvas = this.canvas;
+    if (!ctx || !canvas) return;
 
-    const height = this.canvas.height;
+    const height = canvas.height;
 
     this.spectralZones.forEach(zone => {
       const yMin = this.frequencyToY(zone.frequencyMin);
       const yMax = this.frequencyToY(zone.frequencyMax);
 
       // Create gradient for zone
-      const gradient = this.ctx.createLinearGradient(0, yMin, 0, yMax);
+      const gradient = ctx.createLinearGradient(0, yMin, 0, yMax);
       gradient.addColorStop(0, `${zone.color}88`);
       gradient.addColorStop(0.5, `${zone.color}CC`);
       gradient.addColorStop(1, `${zone.color}88`);
 
       // Draw zone
-      this.ctx.fillStyle = gradient;
-      this.ctx.fillRect(0, yMin, this.canvas.width, yMax - yMin);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, yMin, canvas.width, yMax - yMin);
 
       // Draw zone indicator
-      this.ctx.strokeStyle = zone.color;
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, yMin);
-      this.ctx.lineTo(this.canvas.width, yMin);
-      this.ctx.moveTo(0, yMax);
-      this.ctx.lineTo(this.canvas.width, yMax);
-      this.ctx.stroke();
+      ctx.strokeStyle = zone.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, yMin);
+      ctx.lineTo(canvas.width, yMin);
+      ctx.moveTo(0, yMax);
+      ctx.lineTo(canvas.width, yMax);
+      ctx.stroke();
 
       // Draw zone label
-      this.ctx.fillStyle = '#fff';
-      this.ctx.font = '8px JetBrains Mono';
-      this.ctx.fillText(zone.parameter, 5, yMin + 10);
+      ctx.fillStyle = '#fff';
+      ctx.font = '8px JetBrains Mono';
+      ctx.fillText(zone.parameter, 5, yMin + 10);
     });
   }
 
@@ -528,11 +551,13 @@ export class SpectralWorkbench {
    * Render frequency labels
    */
   private renderFrequencyLabels(): void {
-    if (!this.ctx || !this.canvas) return;
+    const ctx = this.ctx;
+    const canvas = this.canvas;
+    if (!ctx || !canvas) return;
 
-    this.ctx.fillStyle = '#666';
-    this.ctx.font = '8px JetBrains Mono';
-    this.ctx.textAlign = 'right';
+    ctx.fillStyle = '#666';
+    ctx.font = '8px JetBrains Mono';
+    ctx.textAlign = 'right';
 
     const nyquist = Tone.context.sampleRate / 2;
     const labels = [
@@ -545,14 +570,14 @@ export class SpectralWorkbench {
 
     labels.forEach(({ freq, label }) => {
       const y = this.frequencyToY(freq);
-      if (y > 10 && y < this.canvas.height - 10) {
-        this.ctx.fillText(label, this.canvas.width - 5, y);
-        this.ctx.strokeStyle = '#333';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, y);
-        this.ctx.lineTo(this.canvas.width - 40, y);
-        this.ctx.stroke();
+      if (y > 10 && y < canvas.height - 10) {
+        ctx.fillText(label, canvas.width - 5, y);
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width - 40, y);
+        ctx.stroke();
       }
     });
   }

@@ -15,6 +15,9 @@ import * as Tone from 'tone';
 import { InstrumentRegistry, instrumentRegistry } from './InstrumentRegistry';
 import { ScaleManager, scaleManager } from './ScaleManager';
 import { MessageType, WorkletMessage, MeterData, KitType, Channel, SynthType } from './types';
+import { loggers } from '../../utils/logger';
+
+const log = loggers.audio;
 
 export class AudioEngine {
     // ============================================================
@@ -93,7 +96,9 @@ export class AudioEngine {
             this.toneInitialized = true;
 
             // Get native AudioContext
-            this.context = Tone.context.rawContext || Tone.context.rawContext;
+            const rawCtx = Tone.context.rawContext || Tone.context;
+            // Cast to AudioContext (we know it's not OfflineAudioContext at runtime)
+            this.context = rawCtx as AudioContext;
 
             // Initialize Tone.js effects chain
             this.initializeToneEffects();
@@ -102,10 +107,10 @@ export class AudioEngine {
             await this.setupWorklet();
 
             this.isInitialized = true;
-            console.log('[AudioEngine] Initialized successfully');
+            log.debug(' Initialized successfully');
 
         } catch (error) {
-            console.error('[AudioEngine] Initialization failed:', error);
+            log.error(' Initialization failed:', error);
             throw error;
         }
     }
@@ -175,13 +180,37 @@ export class AudioEngine {
      */
     private async setupWorklet(): Promise<void> {
         try {
-            // Load processor
-            await Tone.context.addAudioWorkletModule('/processor.js');
-            console.log('[AudioEngine] AudioWorklet module loaded');
+            // Detect if running in Tauri (standalone) or browser
+            const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
+            const basePath = isTauri ? '.' : '';
+
+            // Load processor with correct path
+            const processorPath = `${basePath}/processor.js`;
+            log.debug(' Loading worklet from:', processorPath);
+
+            await Tone.context.addAudioWorkletModule(processorPath);
+            log.debug(' AudioWorklet module loaded');
+
+            // Get the underlying AudioContext from Tone.js
+            // In Tone.js v14, we need to access the native context
+            const toneContext = Tone.context as any;
+            let audioContext: AudioContext;
+
+            // Try different ways to get the native AudioContext
+            if (toneContext._context) {
+                audioContext = toneContext._context;
+            } else if (toneContext.rawContext && toneContext.rawContext instanceof AudioContext) {
+                audioContext = toneContext.rawContext;
+            } else if (toneContext.context instanceof AudioContext) {
+                audioContext = toneContext.context;
+            } else {
+                // Last resort: create our own context
+                log.warn(' Could not get Tone.js context, creating new one');
+                audioContext = new AudioContext();
+            }
 
             // Create worklet node
-            const nativeCtx = Tone.context.rawContext || Tone.context;
-            this.worklet = new AudioWorkletNode(nativeCtx, 'nexus-dsp-engine');
+            this.worklet = new AudioWorkletNode(audioContext, 'nexus-dsp-engine');
 
             // Connect registry to worklet
             this.registry.setMessagePort(this.worklet.port);
@@ -197,10 +226,10 @@ export class AudioEngine {
             this.compressor.connect(this.worklet);
             Tone.connect(this.worklet, this.limiter);
 
-            console.log('[AudioEngine] AudioWorklet connected');
+            log.debug(' AudioWorklet connected');
 
         } catch (error) {
-            console.warn('[AudioEngine] AudioWorklet setup failed, using fallback:', error);
+            log.warn(' AudioWorklet setup failed, using fallback:', error);
             // Fallback connection
             this.compressor.connect(this.limiter);
         }
@@ -211,9 +240,15 @@ export class AudioEngine {
      */
     private async loadWasm(): Promise<void> {
         try {
-            const response = await fetch('/nexus-dsp.wasm');
+            // Detect if running in Tauri (standalone) or browser
+            const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
+            const basePath = isTauri ? '.' : '';
+            const wasmPath = `${basePath}/nexus-dsp.wasm`;
+
+            log.debug(' Loading WASM from:', wasmPath);
+            const response = await fetch(wasmPath);
             if (!response.ok) {
-                console.log('[AudioEngine] WASM not available, using JS fallback');
+                log.debug(' WASM not available, using JS fallback');
                 return;
             }
 
@@ -228,10 +263,10 @@ export class AudioEngine {
                 });
             }
 
-            console.log('[AudioEngine] WASM loaded');
+            log.debug(' WASM loaded');
 
         } catch (error) {
-            console.warn('[AudioEngine] WASM load failed:', error);
+            log.warn(' WASM load failed:', error);
         }
     }
 
@@ -246,12 +281,12 @@ export class AudioEngine {
                 break;
 
             case MessageType.WASM_READY:
-                console.log('[AudioEngine] WASM engine ready');
+                log.debug(' WASM engine ready');
                 this.emit('wasmReady', true);
                 break;
 
             case MessageType.INSTRUMENT_READY:
-                console.log(`[AudioEngine] Instrument ${msg.instrumentId} ready`);
+                log.debug(' Instrument', msg.instrumentId, 'ready');
                 break;
         }
     }
@@ -319,20 +354,154 @@ export class AudioEngine {
     // ============================================================
 
     /**
-     * Load a kit (legacy Tone.js method)
-     * @deprecated Use registry.createDefaultSetup() instead
+     * Load a kit - changes synth parameters based on kit type
      */
     async loadKit(kitName: KitType, isInit = false): Promise<void> {
-        // Legacy implementation - kept for backwards compatibility
         this.currentKit = kitName;
-        console.log(`[AudioEngine] Loaded kit: ${kitName} (legacy mode)`);
+        log.debug(` Loading kit: ${kitName}`);
+
+        // Kit-specific sound design parameters
+        const kitConfigs: Record<KitType, {
+            filterFreq: number;
+            filterType: BiquadFilterType;
+            reverbWet: number;
+            delayWet: number;
+            compressorThreshold: number;
+            presence: number;
+        }> = {
+            'NEON': {
+                filterFreq: 18000,
+                filterType: 'lowpass',
+                reverbWet: 0.25,
+                delayWet: 0.1,
+                compressorThreshold: -16,
+                presence: 2
+            },
+            'GLITCH': {
+                filterFreq: 12000,
+                filterType: 'bandpass',
+                reverbWet: 0.15,
+                delayWet: 0.3,
+                compressorThreshold: -12,
+                presence: 1
+            },
+            'ACID': {
+                filterFreq: 3000,
+                filterType: 'lowpass',
+                reverbWet: 0.2,
+                delayWet: 0.25,
+                compressorThreshold: -14,
+                presence: 3
+            },
+            'VINYL': {
+                filterFreq: 8000,
+                filterType: 'lowpass',
+                reverbWet: 0.35,
+                delayWet: 0.15,
+                compressorThreshold: -18,
+                presence: -1
+            },
+            'CLUB': {
+                filterFreq: 20000,
+                filterType: 'lowpass',
+                reverbWet: 0.2,
+                delayWet: 0.1,
+                compressorThreshold: -14,
+                presence: 2
+            },
+            'CHIPTUNE': {
+                filterFreq: 6000,
+                filterType: 'lowpass',
+                reverbWet: 0.1,
+                delayWet: 0.05,
+                compressorThreshold: -10,
+                presence: 4
+            },
+            'CINEMATIC': {
+                filterFreq: 16000,
+                filterType: 'lowpass',
+                reverbWet: 0.45,
+                delayWet: 0.2,
+                compressorThreshold: -20,
+                presence: 1
+            },
+            'INDUSTRIAL': {
+                filterFreq: 5000,
+                filterType: 'lowpass',
+                reverbWet: 0.3,
+                delayWet: 0.15,
+                compressorThreshold: -8,
+                presence: 5
+            },
+            'ETHEREAL': {
+                filterFreq: 14000,
+                filterType: 'lowpass',
+                reverbWet: 0.6,
+                delayWet: 0.35,
+                compressorThreshold: -22,
+                presence: 0
+            },
+            'DUNGEON': {
+                filterFreq: 4000,
+                filterType: 'lowpass',
+                reverbWet: 0.5,
+                delayWet: 0.25,
+                compressorThreshold: -16,
+                presence: -2
+            },
+            'PHONK': {
+                filterFreq: 6000,
+                filterType: 'lowpass',
+                reverbWet: 0.35,
+                delayWet: 0.2,
+                compressorThreshold: -10,
+                presence: 4
+            }
+        };
+
+        const config = kitConfigs[kitName] || kitConfigs['NEON'];
+
+        // Apply to effects chain
+        if (this.filter) {
+            this.filter.frequency.value = config.filterFreq;
+            this.filter.type = config.filterType;
+        }
+        if (this.reverb) {
+            this.reverb.wet.value = config.reverbWet;
+        }
+        if (this.delay) {
+            this.delay.wet.value = config.delayWet;
+        }
+        if (this.compressor) {
+            this.compressor.threshold.value = config.compressorThreshold;
+        }
+        if (this.presenceEQ) {
+            this.presenceEQ.gain.value = config.presence;
+        }
+
+        log.debug(` Kit ${kitName} applied: filter=${config.filterFreq}Hz, reverb=${config.reverbWet}`);
+
+        // Emit event for UI
+        this.emit('kitLoaded', kitName);
     }
 
     /**
-     * Get channels (legacy)
-     * @deprecated Use registry.getInstrumentsByType() instead
+     * Get current kit
      */
-    getChannels(): Channel[] {
+    getCurrentKit(): KitType {
+        return this.currentKit;
+    }
+
+    /**
+     * Get channels - returns track channels from NexusUISetup if available
+     */
+    getChannels(): any[] {
+        // Try to get track channels from NexusUISetup
+        const win = (globalThis as any).window;
+        if (win && typeof win.getTrackChannels === 'function') {
+            return win.getTrackChannels();
+        }
+        // Fallback to empty legacy array
         return this.channels;
     }
 
@@ -356,6 +525,8 @@ export class AudioEngine {
     getEffects() {
         return {
             eq3: null, // Legacy
+            drumBus: this.drumBus,
+            synthBus: this.synthBus,
             reverb: this.reverb,
             delay: this.delay,
             compressor: this.compressor,
@@ -364,6 +535,9 @@ export class AudioEngine {
             presenceEQ: this.presenceEQ,
             reverbPreDelay: this.reverbPreDelay,
             stereoWidener: this.stereoWidener,
+            masterVolume: this.masterVolume,
+            analyser: this.analyser,
+            waveform: this.waveform,
         };
     }
 
@@ -397,7 +571,7 @@ export class AudioEngine {
                     (node as any).dispose();
                 }
             } catch (error) {
-                console.error('[AudioEngine] Dispose error:', error);
+                log.error(' Dispose error:', error);
             }
         });
 
@@ -408,7 +582,7 @@ export class AudioEngine {
         }
 
         this.isInitialized = false;
-        console.log('[AudioEngine] Disposed');
+        log.debug(' Disposed');
     }
 }
 

@@ -3,6 +3,10 @@
  * Map MIDI controllers to parameters
  */
 
+import { loggers } from '../utils/logger';
+
+const log = loggers.system;
+
 export class MIDILearn {
     private mappings: Map<string, MIDIMapping> = new Map();
     private isLearning: boolean = false;
@@ -25,16 +29,16 @@ export class MIDILearn {
                 }
             };
 
-            console.log('[MIDILearn] Initialized');
+            log.debug('[MIDILearn] Initialized');
         } catch (e) {
-            console.warn('[MIDILearn] MIDI not available:', e);
+            log.warn('[MIDILearn] MIDI not available:', e);
         }
     }
 
     startLearn(paramId: string): void {
         this.isLearning = true;
         this.currentParam = paramId;
-        console.log(`[MIDILearn] Learning for: ${paramId}`);
+        log.debug(` Learning for: ${paramId}`);
     }
 
     stopLearn(): void {
@@ -64,7 +68,7 @@ export class MIDILearn {
                 curve: 'linear'
             });
 
-            console.log(`[MIDILearn] Mapped ${this.currentParam} to CC${controller}`);
+            log.debug(` Mapped ${this.currentParam} to CC${controller}`);
             this.stopLearn();
 
             if (this.onMappingChange) {

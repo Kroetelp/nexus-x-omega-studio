@@ -7,10 +7,13 @@ import type { Snapshot, MorphTarget, EasingFunction } from '../types/index.js';
 import { errorHandler } from './ErrorHandler.js';
 import * as Tone from 'tone';
 import { interpolate, interpolateObject } from '../utils/easing.js';
+import { loggers } from '../utils/logger';
+
+const log = loggers.system;
 
 export class QuantumSnapshots {
   private static instance: QuantumSnapshots;
-  private snapshots: Snapshot[] = Array(8).fill(null);
+  private snapshots: (Snapshot | null)[] = Array(8).fill(null);
   private maxSnapshots = 8;
   private activeMorph: MorphTarget | null = null;
   private morphAnimationId: number | null = null;
@@ -141,18 +144,22 @@ export class QuantumSnapshots {
         // Find the corresponding Tone.js node and apply
         if (key.startsWith('master') || key.startsWith('eq') || key.startsWith('filter')) {
           const node = this.findToneNode(key);
-          if (node) {
+          if (node && typeof node === 'object') {
+            const n = node as Record<string, unknown>;
             if (typeof value === 'number') {
-              if (node.value !== undefined) {
-                node.value = value;
-              } else if (node.volume !== undefined) {
-                node.volume.value = value;
+              if ('value' in n && typeof n.value === 'number') {
+                n.value = value;
+              } else if ('volume' in n && n.volume && typeof n.volume === 'object') {
+                const vol = n.volume as Record<string, unknown>;
+                if ('value' in vol) {
+                  vol.value = value;
+                }
               }
             }
           }
         }
       } catch (error) {
-        console.error(`Error morphing parameter ${key}:`, error);
+        log.error(`Error morphing parameter ${key}:`, error);
       }
     });
 
@@ -178,23 +185,25 @@ export class QuantumSnapshots {
   /**
    * Find Tone.js node by parameter name
    */
-  private findToneNode(paramName: string): any {
-    if (!window.engine) return null;
+  private findToneNode(paramName: string): unknown {
+    const effects = window.engine?.getEffects?.() as Record<string, unknown> | undefined;
+    if (!effects) return null;
 
-    const effects = window.engine.getEffects();
+    const e = effects;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const map: Record<string, any> = {
-      'masterVolume': effects.limiter,
-      'eqLow': effects.eq3.low,
-      'eqMid': effects.eq3.mid,
-      'eqHigh': effects.eq3.high,
-      'filterFreq': effects.autoFilter.baseFrequency,
-      'reverbWet': effects.reverb.wet,
-      'delayWet': effects.delay.wet,
-      'masterPitch': effects.masterPitch,
-      'stereoWidth': effects.stereoWidener.width
+      'masterVolume': e.limiter,
+      'eqLow': (e.eq3 as Record<string, unknown>)?.low,
+      'eqMid': (e.eq3 as Record<string, unknown>)?.mid,
+      'eqHigh': (e.eq3 as Record<string, unknown>)?.high,
+      'filterFreq': (e.autoFilter as { baseFrequency?: unknown } | undefined),
+      'reverbWet': (e.reverb as Record<string, unknown>)?.wet,
+      'delayWet': (e.delay as Record<string, unknown>)?.wet,
+      'masterPitch': e.masterPitch,
+      'stereoWidth': (e.stereoWidener as Record<string, unknown>)?.width
     };
 
-    return map[paramName] || null;
+    return map[paramName] ?? null;
   }
 
   /**
@@ -219,7 +228,7 @@ export class QuantumSnapshots {
   /**
    * Get all snapshots
    */
-  getAllSnapshots(): Snapshot[] {
+  getAllSnapshots(): (Snapshot | null)[] {
     return this.snapshots;
   }
 
@@ -283,7 +292,8 @@ export class QuantumSnapshots {
       // Shift+click to save
       btn.oncontextmenu = (e) => {
         e.preventDefault();
-        this.saveSnapshot(i, window.seq.data, this.captureParameters(), this.captureEffects());
+        const seqData = window.seq?.data ?? [];
+        this.saveSnapshot(i, seqData, this.captureParameters(), this.captureEffects());
       };
 
       wrapper.appendChild(btn);
@@ -371,33 +381,44 @@ export class QuantumSnapshots {
    * Capture current parameters
    */
   private captureParameters(): Record<string, number> {
-    if (!window.engine) return {};
+    const effects = window.engine?.getEffects?.() as Record<string, unknown> | undefined;
+    const channels = window.engine?.getChannels?.() as Array<{ vol?: { volume?: { value?: number } } }> | undefined;
 
-    const effects = window.engine.getEffects();
+    if (!effects) return {};
+
+    const e = effects;
+    const eq3 = e.eq3 as Record<string, unknown> | undefined;
+    const reverb = e.reverb as Record<string, unknown> | undefined;
+    const delay = e.delay as Record<string, unknown> | undefined;
+    const stereoWidener = e.stereoWidener as Record<string, unknown> | undefined;
+    const masterPitch = e.masterPitch as Record<string, unknown> | undefined;
+
     return {
-      masterVolume: window.engine.getChannels().reduce((sum, ch) => sum + ch.vol.volume.value, 0),
-      eqLow: effects.eq3.low.value,
-      eqMid: effects.eq3.mid.value,
-      eqHigh: effects.eq3.high.value,
-      reverbWet: effects.reverb.wet.value,
-      delayWet: effects.delay.wet.value,
-      masterPitch: effects.masterPitch.pitch,
-      stereoWidth: effects.stereoWidener.width.value
+      masterVolume: channels?.reduce((sum: number, ch) => sum + (ch.vol?.volume?.value ?? 0), 0) ?? 0,
+      eqLow: (eq3?.low as { value?: number })?.value ?? 0,
+      eqMid: (eq3?.mid as { value?: number })?.value ?? 0,
+      eqHigh: (eq3?.high as { value?: number })?.value ?? 0,
+      reverbWet: (reverb?.wet as { value?: number })?.value ?? 0,
+      delayWet: (delay?.wet as { value?: number })?.value ?? 0,
+      masterPitch: (masterPitch?.pitch as number) ?? 0,
+      stereoWidth: (stereoWidener?.width as { value?: number })?.value ?? 0
     };
   }
 
   /**
    * Capture current effects state
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private captureEffects(): any {
-    if (!window.engine) return {};
+    const effects = window.engine?.getEffects?.();
+    if (!effects) return {};
 
-    const effects = window.engine.getEffects();
+    const e = effects as Record<string, unknown>;
     return {
-      reverb: effects.reverb.wet.value,
-      delay: effects.delay.wet.value,
-      distortion: effects.distortion.distortion,
-      cheby: effects.cheby.order
+      reverb: (e.reverb as { wet?: { value?: number } })?.wet?.value ?? 0,
+      delay: (e.delay as { wet?: { value?: number } })?.wet?.value ?? 0,
+      distortion: (e.distortion as { distortion?: number })?.distortion ?? 0,
+      cheby: (e.cheby as { order?: number })?.order ?? 0
     };
   }
 }

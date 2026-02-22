@@ -13,7 +13,7 @@ interface ProgressStep {
 
 export class AIProgressDialog {
   private static instance: AIProgressDialog;
-  private dialog: HTMLElement | null = null;
+  private dialog: HTMLDialogElement | null = null;
   private steps: ProgressStep[] = [];
   private startTime: number = 0;
   private estimatedDuration: number = 0;
@@ -75,7 +75,9 @@ export class AIProgressDialog {
 
     // Setup cancel button
     this.cancelButton = document.getElementById('aiCancelBtn');
-    this.cancelButton.addEventListener('click', () => this.cancel());
+    if (this.cancelButton) {
+      this.cancelButton.addEventListener('click', () => this.cancel());
+    }
   }
 
   /**
@@ -276,9 +278,13 @@ export class AIProgressDialog {
 
 export const aiProgressDialog = AIProgressDialog.getInstance();
 
+// Helper to create steps with default status
+const createSteps = (steps: Array<{ id: string; label: string; duration?: number }>): ProgressStep[] =>
+  steps.map(step => ({ ...step, status: 'pending' as const }));
+
 // Predefined progress steps for common AI operations
 export const AISteps = {
-  fullSong: [
+  fullSong: createSteps([
     { id: 'init', label: 'Initializing AI Engine', duration: 500 },
     { id: 'genre', label: 'Analyzing Genre Requirements', duration: 300 },
     { id: 'loadModel', label: 'Loading MusicVAE Model', duration: 1000 },
@@ -289,22 +295,22 @@ export const AISteps = {
     { id: 'structure', label: 'Building Song Structure', duration: 500 },
     { id: 'schedule', label: 'Scheduling Audio Events', duration: 400 },
     { id: 'finalize', label: 'Finalizing Composition', duration: 300 }
-  ],
+  ]),
 
-  drumsOnly: [
+  drumsOnly: createSteps([
     { id: 'init', label: 'Initializing AI Engine', duration: 500 },
     { id: 'loadModel', label: 'Loading MusicVAE Model', duration: 800 },
     { id: 'generate', label: 'Generating Drum Patterns', duration: 1200 },
     { id: 'apply', label: 'Applying to Sequencer', duration: 300 },
     { id: 'finalize', label: 'Finalizing', duration: 200 }
-  ],
+  ]),
 
-  neuralDream: [
+  neuralDream: createSteps([
     { id: 'init', label: 'Initializing Neural Dream', duration: 300 },
     { id: 'loadModel', label: 'Loading MusicRNN Model', duration: 600 },
     { id: 'convert', label: 'Converting Pattern', duration: 200 },
     { id: 'generate', label: 'AI Dreaming (✨)', duration: 1500 },
     { id: 'preview', label: 'Generating Preview', duration: 500 },
     { id: 'apply', label: 'Applying Transformation', duration: 300 }
-  ]
+  ])
 };

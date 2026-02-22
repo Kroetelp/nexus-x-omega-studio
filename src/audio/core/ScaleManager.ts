@@ -4,6 +4,10 @@
  * Extracted from AudioEngine for modularity
  */
 
+import { loggers } from '../../utils/logger';
+
+const log = loggers.audio;
+
 export class ScaleManager {
     // 🦍 GIGACHAD SCALE SYSTEM - 67+ SCALES 🦍
     private scales: Record<string, string[]> = {
@@ -129,12 +133,12 @@ export class ScaleManager {
      */
     setScale(name: string): boolean {
         if (!this.scales[name]) {
-            console.warn(`[ScaleManager] Unknown scale: ${name}, falling back to minor`);
+            log.warn(` Unknown scale: ${name}, falling back to minor`);
             this.currentScale = 'minor';
             return false;
         }
         this.currentScale = name;
-        console.log(`[ScaleManager] Scale set to: ${name}`);
+        log.debug(` Scale set to: ${name}`);
         return true;
     }
 

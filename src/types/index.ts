@@ -49,14 +49,27 @@ export type ScaleType =
   | 'octatonic' | 'chromatic' | 'tritoneParadise' | 'fourthsStack' | 'fifthsStack'
   // === SECRET UNLOCKABLES ===
   | 'simpleAs' | 'piratesCredo' | 'theL';
-export type KitType = 'NEON' | 'GLITCH' | 'ACID' | 'VINYL' | 'CLUB' | 'CHIPTUNE' | 'CINEMATIC' | 'INDUSTRIAL' | 'ETHEREAL' | 'DUNGEON';
+export type KitType = 'NEON' | 'GLITCH' | 'ACID' | 'VINYL' | 'CLUB' | 'CHIPTUNE' | 'CINEMATIC' | 'INDUSTRIAL' | 'ETHEREAL' | 'DUNGEON' | 'PHONK';
 
 // Audio engine types
+// Import Tone types for proper typing
+import type {
+  PolySynth,
+  Synth,
+  MonoSynth,
+  MembraneSynth,
+  NoiseSynth,
+  MetalSynth,
+  FMSynth,
+  Panner,
+  Volume
+} from 'tone';
+
 export interface Channel {
   name: string;
-  synth: Tone.PolySynth | Tone.Synth | Tone.MonoSynth | Tone.MembraneSynth | Tone.NoiseSynth | Tone.MetalSynth | Tone.FMSynth;
-  panner: Tone.Panner;
-  vol: Tone.Volume;
+  synth: PolySynth | Synth | MonoSynth | MembraneSynth | NoiseSynth | MetalSynth | FMSynth;
+  panner: Panner;
+  vol: Volume;
   type: SynthType;
   muted: boolean;
   soloed: boolean;
@@ -92,6 +105,14 @@ export interface NexusSequencer extends UIComponent {
 }
 
 // Snapshot/State types
+export interface EffectState {
+  reverb: number;
+  delay: number;
+  distortion: number;
+  filter: number;
+  [key: string]: number;
+}
+
 export interface Snapshot {
   id: string;
   name: string;
@@ -99,7 +120,7 @@ export interface Snapshot {
   data: {
     sequencer: number[][];
     parameters: Record<string, number>;
-    effects: Record<string, any>;
+    effects: EffectState;
   };
 }
 
@@ -112,11 +133,11 @@ export interface MorphTarget {
 
 export type EasingFunction = 'linear' | 'easeInQuad' | 'easeOutQuad' | 'easeInOutQuad' | 'easeInExpo' | 'easeOutExpo' | 'easeInOutExpo';
 
-// Performance recorder types
+// Performance recorder types - flexible for various event data shapes
 export interface PerformanceEvent {
   type: 'trigger' | 'parameter' | 'transport' | 'snapshot' | 'mutation';
   timestamp: number;
-  data: any;
+  data: unknown;  // Different event types have different data shapes
 }
 
 export interface PerformanceRecording {
@@ -125,14 +146,19 @@ export interface PerformanceRecording {
   startTime: number;
   endTime: number;
   events: PerformanceEvent[];
-  finalState: any;
+  finalState: {
+    sequencer: number[][];
+    bpm: number;
+    swing: number;
+    genre: string;
+  };
 }
 
-// Error types
+// Error types - using Record for flexibility across codebase
 export interface AppError {
   code: string;
   message: string;
-  details?: any;
+  details?: unknown;  // Flexible for various error contexts
   recoverable: boolean;
 }
 

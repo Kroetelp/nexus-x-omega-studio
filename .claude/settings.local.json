@@ -18,7 +18,20 @@
       "Bash(git push:*)",
       "Bash(npx tsc:*)",
       "mcp__web-reader__webReader",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(ls:*)",
+      "Bash(bash build.sh)",
+      "Bash(npm run type-check:*)",
+      "Bash(cargo build:*)",
+      "Bash(where:*)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat\")",
+      "Bash(rustup toolchain install:*)",
+      "Bash(rustup default:*)",
+      "Bash(export PATH=:*)",
+      "Bash(PATH=\"$PATH:/c/Users/KroeteDE/.rustup/toolchains/stable-x86_64-pc-windows-gnu/lib/rustlib/x86_64-pc-windows-gnu/bin/self-contained\")",
+      "Bash(npx tauri icon:*)",
+      "Bash(npm run tauri:dev:*)",
+      "Bash(npm run tauri:build:*)"
     ]
   },
   "enabledPlugins": {

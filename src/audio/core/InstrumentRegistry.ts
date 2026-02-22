@@ -10,12 +10,15 @@ import { FxController } from '../instruments/FxController';
 import { FmSynthController } from '../instruments/FmSynthController';
 import { BrassController, BrassType } from '../instruments/BrassController';
 import { Drum808Controller } from '../instruments/Drum808Controller';
+import { loggers } from '../../utils/logger';
 import {
     InstrumentConfig,
     InstrumentType,
     MessageType,
     WorkletMessage,
 } from './types';
+
+const log = loggers.audio;
 
 // ============================================================
 // INSTRUMENT REGISTRY
@@ -41,7 +44,7 @@ export class InstrumentRegistry {
             inst.setMessagePort(port);
         });
 
-        console.log('[InstrumentRegistry] Message port connected');
+        log.debug(' Message port connected');
     }
 
     /**
@@ -131,7 +134,7 @@ export class InstrumentRegistry {
         // Send registration to AudioWorklet
         this.sendRegistration(config);
 
-        console.log(`[InstrumentRegistry] Created ${type} "${name}" (ID: ${id})`);
+        log.debug(` Created ${type} "${name}" (ID: ${id})`);
 
         return controller;
     }
@@ -264,7 +267,7 @@ export class InstrumentRegistry {
         // Remove from registry
         this.instruments.delete(id);
 
-        console.log(`[InstrumentRegistry] Removed instrument ${id}`);
+        log.debug(` Removed instrument ${id}`);
 
         return true;
     }
@@ -280,7 +283,7 @@ export class InstrumentRegistry {
         this.instruments.clear();
         this.nextId = 1;
 
-        console.log('[InstrumentRegistry] All instruments cleared');
+        log.debug(' All instruments cleared');
     }
 
     // ============================================================
@@ -354,7 +357,7 @@ export class InstrumentRegistry {
         // bass.setParam(SynthParam.OSC_TYPE, 2); // Square for bass
         // etc.
 
-        console.log('[InstrumentRegistry] Default setup created');
+        log.debug(' Default setup created');
 
         return { kick, snare, clap, hihat, bass, lead, pad, fm, fxBus };
     }

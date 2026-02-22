@@ -4,6 +4,9 @@
 
 import type { AppError } from '../types/index.js';
 import { createAppError, getHumanReadableError } from '../utils/validators.js';
+import { loggers } from '../utils/logger';
+
+const log = loggers.system;
 
 export class ErrorHandler {
   private static instance: ErrorHandler;
@@ -70,7 +73,7 @@ export class ErrorHandler {
     }
 
     // Log to console
-    console.error(`[${appError.code}]`, appError.message, appError.details);
+    log.error(`[${appError.code}]`, appError.message, appError.details);
 
     // Add to history
     this.errorHistory.push(appError);

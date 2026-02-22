@@ -3,7 +3,10 @@
  * Text-to-music interface for AI-powered song generation
  */
 
-import { AIComposer, CompositionPrompt, GeneratedComposition } from '../ai/AIComposer';
+import { AIComposer, CompositionPrompt, GeneratedComposition } from '../ai-engine/AIComposer.js';
+import { loggers } from '../utils/logger';
+
+const log = loggers.ai;
 
 export class AIComposerPanel {
     private container: HTMLElement;
@@ -520,7 +523,7 @@ export class AIComposerPanel {
         };
 
         this.isGenerating = true;
-        const generateBtn = this.container.querySelector('#aicGenerate') as HTMLElement;
+        const generateBtn = this.container.querySelector('#aicGenerate') as HTMLButtonElement;
         const loading = this.container.querySelector('#aicLoading') as HTMLElement;
         const result = this.container.querySelector('#aicResult') as HTMLElement;
 
@@ -549,7 +552,7 @@ export class AIComposerPanel {
             this.drawWaveform();
 
         } catch (error) {
-            console.error('Generation failed:', error);
+            log.error('Generation failed:', error);
             alert('Generation failed. Please try again.');
         } finally {
             this.isGenerating = false;
@@ -628,7 +631,7 @@ export class AIComposerPanel {
         if (!this.currentComposition) return;
 
         this.isGenerating = true;
-        const btn = this.container.querySelector('#aicVariation') as HTMLElement;
+        const btn = this.container.querySelector('#aicVariation') as HTMLButtonElement;
         btn.textContent = '⏳ Creating...';
         btn.disabled = true;
 
@@ -655,7 +658,7 @@ export class AIComposerPanel {
         const targetGenre = genres[Math.floor(Math.random() * genres.length)];
 
         this.isGenerating = true;
-        const btn = this.container.querySelector('#aicStyleTransfer') as HTMLElement;
+        const btn = this.container.querySelector('#aicStyleTransfer') as HTMLButtonElement;
         btn.textContent = '⏳ Transferring...';
         btn.disabled = true;
 

@@ -9,22 +9,20 @@
     "checkJs": false,
     "outDir": "./dist",
     "noEmit": true,
-    "strict": false,
-    "noImplicitAny": false,
-    "allowUnreachableCode": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "allowUnreachableCode": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "noImplicitReturns": false,
-    "noFallthroughCasesInSwitch": false
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.d.ts"],
   "exclude": [
     "node_modules",
     "dist",
-    "main.js",
-    "index.html",
-    "style.css",
-    "processor.js",
-    "nexus-dsp.cpp"
+    "src/core/_unused"
   ]
 }

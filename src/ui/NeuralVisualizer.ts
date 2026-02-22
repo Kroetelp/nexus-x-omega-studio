@@ -6,6 +6,10 @@
  * using WebGPU-inspired techniques and neural network concepts
  */
 
+import { loggers } from '../utils/logger';
+
+const log = loggers.ui;
+
 export class NeuralVisualizer {
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
@@ -303,7 +307,7 @@ export class NeuralVisualizer {
 
             (this.container.querySelector('#nvMic') as HTMLElement).classList.add('active');
         } catch (err) {
-            console.error('Microphone access denied:', err);
+            log.error('Microphone access denied:', err);
             alert('Mikrofon-Zugriff verweigert!');
         }
     }
@@ -352,8 +356,8 @@ export class NeuralVisualizer {
         if (this.analyser) {
             frequencies = new Float32Array(this.analyser.frequencyBinCount);
             waveformData = new Float32Array(this.analyser.frequencyBinCount);
-            this.analyser.getFloatFrequencyData(frequencies);
-            this.analyser.getFloatTimeDomainData(waveformData);
+            this.analyser.getFloatFrequencyData(frequencies as Float32Array<ArrayBuffer>);
+            this.analyser.getFloatTimeDomainData(waveformData as Float32Array<ArrayBuffer>);
 
             // Calculate energy
             this.energy = this.calculateEnergy(frequencies);
