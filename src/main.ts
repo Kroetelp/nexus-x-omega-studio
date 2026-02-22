@@ -15,6 +15,7 @@ import { performanceRecorder } from './core/PerformanceRecorder.js';
 import { aiProgressDialog, AISteps } from './core/AIProgressDialog.js';
 import { automationFeedback } from './ui/AutomationFeedback.js';
 import { audioEngine } from './audio/core/AudioEngine.js';
+import { tauriBridge } from './core/tauriBridge.js';
 
 // --- AI ENGINE (New Module Structure) ---
 import { neuralDream } from './ai-engine/NeuralDream.js';
@@ -109,6 +110,15 @@ class NexusSystem {
       // Initialize audio context
       await Tone.start();
       Tone.Transport.swingSubdivision = "16n";
+
+      // Initialize Tauri Bridge (connects Store to Rust Audio Engine)
+      const tauriAvailable = await tauriBridge.initialize();
+      if (tauriAvailable) {
+        log.info('🦀 TAURI MODE: Using Rust Audio Engine');
+        errorHandler.showSuccess('🦀 RUST AUDIO ENGINE ACTIVE');
+      } else {
+        log.info('🌐 WEB MODE: Using Tone.js Audio Engine');
+      }
 
       // Initialize AI (Magenta)
       try {
