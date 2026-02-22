@@ -5,7 +5,7 @@
  * This is the ONLY place where Store changes affect Audio.
  *
  * ARCHITECTURE:
- * [UI] -> dispatch(action) -> [Store] -> [Bridge] -> [AudioEngine]
+ * [UI] -> dispatch(action) -> [Store] -> [Bridge] -> [Tone.js / Rust]
  *
  * The AudioEngine NEVER reads from the Store directly.
  * The UI NEVER calls AudioEngine methods directly.
@@ -36,9 +36,28 @@ interface AudioEngineWithMethods {
 // Cast audioEngine to interface
 const engine = audioEngine as unknown as AudioEngineWithMethods;
 
+// Audio Backend Type
+type AudioBackend = 'tonejs' | 'rust';
+
 class StoreBridge {
     private unsubscribe: (() => void) | null = null;
     private isInitialized = false;
+    private backend: AudioBackend = 'tonejs'; // Default to Tone.js
+
+    /**
+     * Set the audio backend
+     */
+    setBackend(backend: AudioBackend): void {
+        this.backend = backend;
+        log.info(`[BRIDGE] Audio backend set to: ${backend}`);
+    }
+
+    /**
+     * Get current backend
+     */
+    getBackend(): AudioBackend {
+        return this.backend;
+    }
 
     /**
      * Initialize the bridge - subscribe to store changes

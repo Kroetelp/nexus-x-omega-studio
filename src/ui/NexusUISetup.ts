@@ -1,6 +1,9 @@
 /**
  * NEXUS-X NexusUI Setup
  * Initializes all NexusUI components and connects them to the audio engine
+ *
+ * ARCHITECTURE (Phase 3+4):
+ * [UI] -> [Store.dispatch(action)] -> [StoreBridge] -> [Tone.js or Rust]
  */
 
 import * as Tone from 'tone';
@@ -8,6 +11,7 @@ import { audioEngine } from '../audio/core/AudioEngine';
 import { loggers } from '../utils/logger';
 import { createEmptyPattern, TRACKS } from '../sequencer/patternUtils';
 import { TRACK_NAMES, NUM_TRACKS, STEPS_PER_PATTERN, TRACK_COLORS } from '../config/index';
+import { appStore } from '../core/AppStore';
 
 // Logger instance
 const log = loggers.ui;
@@ -1204,6 +1208,9 @@ export function startSequencer(): void {
         return;
     }
 
+    // Dispatch to Store (Phase 3+4 architecture)
+    appStore.dispatch({ type: 'TRANSPORT_PLAY' });
+
     // Initialize synths if needed
     initializeSynths();
 
@@ -1215,6 +1222,9 @@ export function startSequencer(): void {
 
     const bpm = Tone.Transport.bpm.value;
     const stepDuration = (60 / bpm) / 4 * 1000; // 16th note in ms
+
+    // Dispatch BPM to Store
+    appStore.dispatch({ type: 'TRANSPORT_SET_BPM', payload: bpm });
 
     log.debug(' Starting sequencer:');
     log.debug(' - BPM:', bpm);
@@ -1234,9 +1244,15 @@ export function startSequencer(): void {
     }
     log.debug(' - Active steps in current pattern:', activeSteps);
 
+    // Sync pattern to Store
+    appStore.dispatch({ type: 'SEQUENCER_SET_PATTERN', payload: localSequencerData });
+
     sequencerInterval = window.setInterval(() => {
         playStep(currentStep);
         currentStep = (currentStep + 1) % 32;
+
+        // Dispatch step to Store
+        appStore.dispatch({ type: 'TRANSPORT_STEP', payload: currentStep });
 
         // Track bar progress for song structure
         if (currentStep % 16 === 0) {
@@ -1249,6 +1265,9 @@ export function startSequencer(): void {
 }
 
 export function stopSequencer(): void {
+    // Dispatch to Store (Phase 3+4 architecture)
+    appStore.dispatch({ type: 'TRANSPORT_STOP' });
+
     isPlaying = false;
     if (sequencerInterval) {
         clearInterval(sequencerInterval);
